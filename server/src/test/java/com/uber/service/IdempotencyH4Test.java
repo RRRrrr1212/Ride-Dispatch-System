@@ -1,6 +1,10 @@
 package com.uber.service;
 
-import com.uber.model.*;
+import com.uber.model.Driver;
+import com.uber.model.Location;
+import com.uber.model.Order;
+import com.uber.model.OrderStatus;
+import com.uber.model.VehicleType;
 import com.uber.repository.DriverRepository;
 import com.uber.repository.OrderRepository;
 import org.junit.jupiter.api.*;
