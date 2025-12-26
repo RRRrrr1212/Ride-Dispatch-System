@@ -1,0 +1,359 @@
+﻿[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Ride Dispatch System - Clients                                     [pom]
+[INFO] Shared Components                                                  [jar]
+[INFO] Passenger App                                                      [jar]
+[INFO] Driver App                                                         [jar]
+[INFO] Admin Console                                                      [jar]
+[INFO] 
+[INFO] -------------------< com.uber:ride-dispatch-clients >-------------------
+[INFO] Building Ride Dispatch System - Clients 1.0.0                      [1/5]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ ride-dispatch-clients ---
+[INFO] 
+[INFO] --------------------------< com.uber:shared >---------------------------
+[INFO] Building Shared Components 1.0.0                                   [2/5]
+[INFO]   from shared\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] 6 problems were encountered while building the effective model for org.openjfx:javafx-controls:jar:21.0.1 during dependency collection step for project (use -X to see details)
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ shared ---
+[INFO] Deleting C:\Users\wilso\OneDrive\桌面\Uber\clients\shared\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ shared ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\shared\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ shared ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 12 source files with javac [debug target 17] to target\classes
+[WARNING] location of system modules is not set in conjunction with -source 17
+  not setting the location of system modules may lead to class files that cannot run on JDK 17
+    --release 17 is recommended instead of -source 17 -target 17 because it sets the location of system modules automatically
+[INFO] 
+[INFO] -----------------------< com.uber:passenger-app >-----------------------
+[INFO] Building Passenger App 1.0.0                                       [3/5]
+[INFO]   from passenger-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ passenger-app ---
+[INFO] Deleting C:\Users\wilso\OneDrive\桌面\Uber\clients\passenger-app\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ passenger-app ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\passenger-app\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ passenger-app ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target\classes
+[WARNING] location of system modules is not set in conjunction with -source 17
+  not setting the location of system modules may lead to class files that cannot run on JDK 17
+    --release 17 is recommended instead of -source 17 -target 17 because it sets the location of system modules automatically
+[INFO] 
+[INFO] ------------------------< com.uber:driver-app >-------------------------
+[INFO] Building Driver App 1.0.0                                          [4/5]
+[INFO]   from driver-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ driver-app ---
+[INFO] Deleting C:\Users\wilso\OneDrive\桌面\Uber\clients\driver-app\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ driver-app ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\driver-app\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ driver-app ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target\classes
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] location of system modules is not set in conjunction with -source 17
+  not setting the location of system modules may lead to class files that cannot run on JDK 17
+    --release 17 is recommended instead of -source 17 -target 17 because it sets the location of system modules automatically
+[INFO] 1 warning
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[551,81] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,21] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,26] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,28] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,21] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,26] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,30] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[554,16] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[554,24] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[555,27] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[555,34] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,29] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,35] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,47] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,70] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,77] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[557,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[557,30] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[558,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[558,29] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[559,16] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[563,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[566,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[576,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[579,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[582,37] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[583,37] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[584,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[587,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[588,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[590,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[597,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[598,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[599,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[601,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[602,5] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[607,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[609,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[610,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[611,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[612,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[613,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[614,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[615,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[616,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[620,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[621,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[626,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[627,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[629,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[632,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[633,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[634,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[637,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[638,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[640,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[643,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[647,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[648,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[650,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[651,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[653,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[654,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[656,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[657,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[659,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[662,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[663,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[665,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[666,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[668,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[669,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[671,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[672,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[674,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[675,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[676,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[678,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[681,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[682,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[683,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[692,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[694,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[695,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[696,5] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[701,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[706,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[707,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[711,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[712,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[713,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[714,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[715,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[717,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[719,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[721,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[723,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[725,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[726,5] class, interface, enum, or record expected
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Ride Dispatch System - Clients 1.0.0:
+[INFO] 
+[INFO] Ride Dispatch System - Clients ..................... SUCCESS [  0.164 s]
+[INFO] Shared Components .................................. SUCCESS [  2.525 s]
+[INFO] Passenger App ...................................... SUCCESS [  0.915 s]
+[INFO] Driver App ......................................... FAILURE [  0.111 s]
+[INFO] Admin Console ...................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.843 s
+[INFO] Finished at: 2025-12-26T20:07:54+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project driver-app: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[551,81] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,21] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,26] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[552,28] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,21] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,26] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[553,30] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[554,16] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[554,24] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[555,27] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[555,34] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,29] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,35] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,47] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,70] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[556,77] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[557,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[557,30] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[558,23] not a statement
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[558,29] ';' expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[559,16] illegal text block open delimiter sequence, missing line terminator
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[563,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[566,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[576,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[579,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[582,37] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[583,37] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[584,33] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[587,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[588,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[590,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[597,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[598,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[599,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[601,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[602,5] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[607,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[609,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[610,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[611,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[612,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[613,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[614,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[615,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[616,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[620,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[621,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[626,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[627,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[629,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[632,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[633,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[634,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[637,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[638,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[640,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[643,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[647,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[648,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[650,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[651,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[653,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[654,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[656,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[657,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[659,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[662,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[663,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[665,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[666,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[668,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[669,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[671,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[672,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[674,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[675,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[676,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[678,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[681,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[682,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[683,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[692,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[694,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[695,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[696,5] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[701,9] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[706,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[707,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[711,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[712,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[713,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[714,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[715,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[717,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[719,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[721,25] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[723,21] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[725,13] class, interface, enum, or record expected
+[ERROR] /C:/Users/wilso/OneDrive/桌面/Uber/clients/driver-app/src/main/java/com/uber/driver/MainController.java:[726,5] class, interface, enum, or record expected
+[ERROR] -> [Help 1]
+org.apache.maven.lifecycle.LifecycleExecutionException: Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project driver-app: Compilation failure
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:333)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:919)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:285)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:207)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+    at java.lang.reflect.Method.invoke (Method.java:580)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+Caused by: org.apache.maven.plugin.compiler.CompilationFailureException: Compilation failure
+    at org.apache.maven.plugin.compiler.AbstractCompilerMojo.execute (AbstractCompilerMojo.java:1212)
+    at org.apache.maven.plugin.compiler.CompilerMojo.execute (CompilerMojo.java:193)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:126)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:919)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:285)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:207)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+    at java.lang.reflect.Method.invoke (Method.java:580)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+[ERROR] 
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :driver-app

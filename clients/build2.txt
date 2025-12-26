@@ -1,0 +1,73 @@
+﻿[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Ride Dispatch System - Clients                                     [pom]
+[INFO] Shared Components                                                  [jar]
+[INFO] Passenger App                                                      [jar]
+[INFO] Driver App                                                         [jar]
+[INFO] Admin Console                                                      [jar]
+[INFO] 
+[INFO] -------------------< com.uber:ride-dispatch-clients >-------------------
+[INFO] Building Ride Dispatch System - Clients 1.0.0                      [1/5]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --------------------------< com.uber:shared >---------------------------
+[INFO] Building Shared Components 1.0.0                                   [2/5]
+[INFO]   from shared\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] 6 problems were encountered while building the effective model for org.openjfx:javafx-controls:jar:21.0.1 during dependency collection step for project (use -X to see details)
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ shared ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\shared\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ shared ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] -----------------------< com.uber:passenger-app >-----------------------
+[INFO] Building Passenger App 1.0.0                                       [3/5]
+[INFO]   from passenger-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ passenger-app ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\passenger-app\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ passenger-app ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] ------------------------< com.uber:driver-app >-------------------------
+[INFO] Building Driver App 1.0.0                                          [4/5]
+[INFO]   from driver-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ driver-app ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\driver-app\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ driver-app ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] -------------------------< com.uber:admin-app >-------------------------
+[INFO] Building Admin Console 1.0.0                                       [5/5]
+[INFO]   from admin-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ admin-app ---
+[INFO] skip non existing resourceDirectory C:\Users\wilso\OneDrive\桌面\Uber\clients\admin-app\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ admin-app ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Ride Dispatch System - Clients 1.0.0:
+[INFO] 
+[INFO] Ride Dispatch System - Clients ..................... SUCCESS [  0.004 s]
+[INFO] Shared Components .................................. SUCCESS [  0.542 s]
+[INFO] Passenger App ...................................... SUCCESS [  0.039 s]
+[INFO] Driver App ......................................... SUCCESS [  0.030 s]
+[INFO] Admin Console ...................................... SUCCESS [  0.034 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  0.819 s
+[INFO] Finished at: 2025-12-26T20:09:54+08:00
+[INFO] ------------------------------------------------------------------------
