@@ -311,8 +311,8 @@ Phase 4: 前端 & 測試 (可並行) ──────────────�
 ## 🔗 快速連結
 
 - 📁 [所有 Issues](https://github.com/RRRrrr1212/Ride-Dispatch-System/issues)
-- 📖 [狀態機合約](./state-machine.md)
-- 📖 [API 規格](./api-spec.md)
+- 📖 [狀態機合約](./specs/state-machine.md)
+- 📖 [API 規格](./specs/api-spec.md)
 - 📖 [README](../README.md)
 
 ---
