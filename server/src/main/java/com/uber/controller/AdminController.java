@@ -275,7 +275,7 @@ public class AdminController {
         if (order.getDriverId() != null) {
             summary.put("driverId", order.getDriverId());
         }
-        if (order.getActualFare() > 0) {
+        if (order.getActualFare() != null && order.getActualFare() > 0) {
             summary.put("fare", order.getActualFare());
         }
         if (order.getCompletedAt() != null) {
@@ -301,10 +301,10 @@ public class AdminController {
         if (order.getStartedAt() != null) {
             detail.put("startedAt", order.getStartedAt());
         }
-        if (order.getDuration() > 0) {
+        if (order.getDuration() != null && order.getDuration() > 0) {
             detail.put("duration", order.getDuration());
         }
-        if (order.getCancelFee() > 0) {
+        if (order.getCancelFee() != null && order.getCancelFee() > 0) {
             detail.put("cancelFee", order.getCancelFee());
         }
         if (order.getCancelledBy() != null) {
