@@ -32,3 +32,6 @@ Thumbs.db
 *.ctxt
 .mtj.tmp/
 hs_err_pid*
+
+# Clients
+clients/build*.txt
