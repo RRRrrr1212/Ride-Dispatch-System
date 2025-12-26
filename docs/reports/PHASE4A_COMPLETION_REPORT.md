@@ -202,23 +202,27 @@ clients/
 
 1. **啟動後端**
    ```bash
-   cd server && mvn spring-boot:run
+   cd server
+   mvn spring-boot:run
    ```
 
 2. **開啟管理後台** (觀察狀態)
    ```bash
-   cd clients/admin-app && mvn javafx:run
+   cd clients/admin-app
+   mvn javafx:run
    ```
 
 3. **開啟司機端並上線**
    ```bash
-   cd clients/driver-app && mvn javafx:run
+   cd clients/driver-app
+   mvn javafx:run
    ```
    - 填寫資訊 → 開始接單
 
 4. **開啟乘客端並叫車**
    ```bash
-   cd clients/passenger-app && mvn javafx:run
+   cd clients/passenger-app
+   mvn javafx:run
    ```
    - 設定座標 → 選擇車種 → 立即叫車
 

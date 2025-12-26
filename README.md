@@ -144,9 +144,7 @@ mvn pmd:pmd
 
 | 指標 | 目標 |
 |-----|-----|
-| Line Coverage | ≥ 80% |
-| Branch Coverage | ≥ 70% |
-| Method Coverage | ≥ 75% |
+| Branch Coverage | ≥ 90% |
 
 ## 👥 團隊分工
 
