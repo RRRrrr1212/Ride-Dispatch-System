@@ -34,4 +34,4 @@ Thumbs.db
 hs_err_pid*
 
 # Clients
-#clients/build*.txt
+clients/build*.txt
