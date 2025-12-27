@@ -2,31 +2,25 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  Switch,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
-  Chip,
   IconButton,
+  Switch,
   Menu,
   MenuItem,
-  Divider,
   ListItemIcon,
   ListItemText,
+  Typography,
+  Divider,
 } from '@mui/material';
 import {
-  LocalShipping as OrderIcon,
+  Menu as MenuIcon,
   History as HistoryIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-  Settings as SettingsIcon,
-  MoreVert as MoreIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useDriverStore } from '../stores/driver.store';
 import { useAuthStore } from '../stores/auth.store';
+import { adminApi } from '../api/admin.api';
 
 export function DriverAppLayout() {
   const navigate = useNavigate();
@@ -35,171 +29,202 @@ export function DriverAppLayout() {
   const { isOnline, toggleOnline, driver, setDriver, clearDriver } = useDriverStore();
   
   // 選單狀態
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const menuOpen = Boolean(anchorEl);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   // 自動初始化 driver (Demo 用途)
   useEffect(() => {
-    if (user && user.role === 'driver' && !driver) {
-      // 自動建立一個 mock driver
-      setDriver({
-        driverId: user.id,
-        name: user.name || '司機',
-        phone: user.phone || '0912345678',
-        vehiclePlate: 'ABC-' + Math.floor(Math.random() * 9000 + 1000),
-        vehicleType: 'STANDARD',
-        status: 'OFFLINE',
-        busy: false,
-      });
-    }
+    const initDriver = async () => {
+      if (user && user.role === 'driver' && !driver) {
+        const vehiclePlate = 'ABC-' + Math.floor(Math.random() * 9000 + 1000);
+        const newDriver = {
+          driverId: user.id,
+          name: user.name || '司機',
+          phone: user.phone || '0912345678',
+          vehiclePlate,
+          vehicleType: 'STANDARD' as const,
+          status: 'OFFLINE' as const,
+          busy: false,
+        };
+        
+        setDriver(newDriver);
+        
+        try {
+          await adminApi.createDriver({
+            driverId: user.id,
+            name: user.name || '司機',
+            phone: user.phone || '0912345678',
+            vehiclePlate,
+            vehicleType: 'STANDARD',
+          });
+          console.log('司機已在後端註冊:', user.id);
+        } catch (error: any) {
+          if (error.response?.status !== 409) {
+            console.warn('後端司機註冊失敗:', error.message);
+          }
+        }
+      }
+    };
+    
+    initDriver();
   }, [user, driver, setDriver]);
 
-  const getNavValue = () => {
-    if (location.pathname.includes('/profile')) return 2;
-    if (location.pathname.includes('/history')) return 1;
-    if (location.pathname.includes('/trip') || location.pathname.includes('/order')) return 0;
-    return 0;
-  };
-
-  const handleNavChange = (_: unknown, newValue: number) => {
-    switch (newValue) {
-      case 0:
-        navigate('/driver/dashboard');
-        break;
-      case 1:
-        navigate('/driver/history');
-        break;
-      case 2:
-        navigate('/driver/profile');
-        break;
-    }
-  };
-
-  const handleToggleOnline = async () => {
-    try {
-      await toggleOnline();
-    } catch (error) {
-      console.error('切換上線狀態失敗:', error);
-    }
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = () => {
-    handleMenuClose();
-    // 清除司機狀態
-    clearDriver();
-    // 登出
     logout();
-    // 導航到登入頁
-    navigate('/login', { replace: true });
+    clearDriver();
+    navigate('/login');
+    setMenuAnchor(null);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setMenuAnchor(null);
+  };
+
+  // 判斷頁面類型
+  const isDashboard = location.pathname.includes('/dashboard');
+  const isTrip = location.pathname.includes('/trip');
+  const isMapPage = isDashboard || isTrip;
+
+  // 處理返回
+  const handleBack = () => {
+    navigate('/driver/dashboard');
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        maxWidth: 430,
-        margin: '0 auto',
-        bgcolor: 'background.default',
-      }}
-    >
-      {/* 頂部 AppBar */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            司機模式
-          </Typography>
-          <Chip
-            label={isOnline ? '上線中' : '離線'}
-            color={isOnline ? 'success' : 'default'}
-            size="small"
-            sx={{ mr: 1 }}
-          />
-          <Switch
-            checked={isOnline}
-            onChange={handleToggleOnline}
-            color="success"
-            data-testid="toggle-online"
-          />
-          
-          {/* 更多選項按鈕 */}
-          <IconButton
-            color="inherit"
-            onClick={handleMenuOpen}
-            data-testid="btn-menu"
-          >
-            <MoreIcon />
-          </IconButton>
-          
-          {/* 下拉選單 */}
-          <Menu
-            anchorEl={anchorEl}
-            open={menuOpen}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-          >
-            <MenuItem disabled>
-              <ListItemText 
-                primary={driver?.name || user?.name || '司機'} 
-                secondary={driver?.vehiclePlate || ''} 
-              />
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleMenuClose}>
-              <ListItemIcon>
-                <SettingsIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>設定</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleLogout} data-testid="btn-logout">
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText sx={{ color: 'error.main' }}>登出</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ 
+      height: '100vh', 
+      width: '100vw',
+      display: 'flex', 
+      flexDirection: 'column',
+      bgcolor: '#1a1a1a',
+      overflow: 'hidden',
+    }}>
+      {/* 1. 地圖頁面專用佈局 (Dashboard & Trip) */}
+      {isMapPage && (
+        <>
+          {/* 左上角懸浮選單 (只在 Dashboard 顯示) */}
+          {!isTrip && (
+            <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 1100 }}>
+              <IconButton
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                sx={{
+                  bgcolor: 'white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  '&:hover': { bgcolor: '#f5f5f5' },
+                  width: 44,
+                  height: 44,
+                }}
+              >
+                <MenuIcon sx={{ color: '#1a1a1a' }} />
+              </IconButton>
+              
+              <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={() => setMenuAnchor(null)}
+                PaperProps={{
+                  sx: { 
+                    borderRadius: 3, 
+                    minWidth: 220, 
+                    mt: 1, 
+                    boxShadow: 8,
+                    bgcolor: '#2a2a2a', // 改為深色背景
+                    color: 'white',     // 文字改為白色
+                  }
+                }}
+              >
+                <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white' }}>
+                    {driver?.name || '司機'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'grey.400' }}>
+                    {driver?.vehiclePlate}
+                  </Typography>
+                </Box>
+                <MenuItem onClick={() => handleNavigation('/driver/history')} sx={{ py: 1.5 }}>
+                  <ListItemIcon><HistoryIcon fontSize="small" sx={{ color: 'grey.300' }} /></ListItemIcon>
+                  <ListItemText primary="歷史行程" />
+                </MenuItem>
+                <MenuItem onClick={() => handleNavigation('/driver/profile')} sx={{ py: 1.5 }}>
+                  <ListItemIcon><PersonIcon fontSize="small" sx={{ color: 'grey.300' }} /></ListItemIcon>
+                  <ListItemText primary="個人資料" />
+                </MenuItem>
+                <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+                <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: '#ff5252' }}>
+                  <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: '#ff5252' }} /></ListItemIcon>
+                  <ListItemText primary="登出" />
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
 
-      {/* 主內容區 */}
-      <Box component="main" sx={{ flexGrow: 1, overflow: 'auto', pb: 7 }}>
+          {/* 右上角狀態開關 (只在 Dashboard 顯示) */}
+          {!isTrip && (
+            <Box sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 1100,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              bgcolor: 'rgba(255,255,255,0.95)', // 保持淺色背景以凸顯開關
+              borderRadius: 20,
+              pl: 2,
+              pr: 0.5,
+              py: 0.5,
+              boxShadow: 3,
+            }}>
+              <Typography 
+                variant="caption" 
+                fontWeight="bold" 
+                color={isOnline ? 'success.main' : 'text.disabled'}
+              >
+                {isOnline ? '上線中' : '離線'}
+              </Typography>
+              <Switch
+                checked={isOnline}
+                onChange={() => toggleOnline()}
+                color="success"
+                size="small"
+              />
+            </Box>
+          )}
+        </>
+      )}
+
+      {/* 2. 一般頁面專用 Header (History & Profile) */}
+      {!isMapPage && (
+        <Box sx={{ 
+          px: 2, 
+          py: 1.5, 
+          display: 'flex', 
+          alignItems: 'center', 
+          bgcolor: '#1a1a1a',
+          color: 'white',
+          flexShrink: 0,
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <IconButton onClick={handleBack} sx={{ color: 'white', mr: 1, ml: -1 }}>
+            <ArrowBackIcon /> 
+          </IconButton>
+          <Typography variant="h6" fontWeight="bold">
+            {location.pathname.includes('history') ? '歷史行程' : 
+             location.pathname.includes('profile') ? '個人資料' : 'Uber 司機端'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* 內容區域 */}
+      <Box sx={{ 
+        flex: 1, 
+        position: 'relative', 
+        width: '100%',
+        height: isMapPage ? '100%' : 'auto',
+        overflow: isMapPage ? 'hidden' : 'auto',
+      }}>
         <Outlet />
       </Box>
-
-      {/* 底部導航 - 修正按鈕功能 */}
-      <Paper
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          maxWidth: 430,
-          margin: '0 auto',
-        }}
-        elevation={3}
-      >
-        <BottomNavigation value={getNavValue()} onChange={handleNavChange}>
-          <BottomNavigationAction label="訂單" icon={<OrderIcon />} />
-          <BottomNavigationAction label="歷史" icon={<HistoryIcon />} />
-          <BottomNavigationAction label="個人" icon={<PersonIcon />} />
-        </BottomNavigation>
-      </Paper>
     </Box>
   );
 }

@@ -8,10 +8,12 @@ import {
   Button,
   CircularProgress,
   Divider,
+  Skeleton,
 } from '@mui/material';
 import { StatusChip } from '../../components/common/StatusChip';
 import { orderApi } from '../../api/order.api';
 import { useDriverStore } from '../../stores/driver.store';
+import { reverseGeocodeWithCache } from '../../api/geocoding.api';
 import type { Order } from '../../types';
 
 export function OrderDetailPage() {
@@ -22,6 +24,12 @@ export function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
+  
+  // 地址狀態
+  const [pickupAddress, setPickupAddress] = useState<string | null>(null);
+  const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
+  const [loadingPickup, setLoadingPickup] = useState(false);
+  const [loadingDropoff, setLoadingDropoff] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
@@ -30,7 +38,11 @@ export function OrderDetailPage() {
       try {
         const response = await orderApi.get(orderId);
         if (response.data.success && response.data.data) {
-          setOrder(response.data.data);
+          const orderData = response.data.data;
+          setOrder(orderData);
+          
+          // 獲取地址
+          fetchAddresses(orderData);
         }
       } catch (error) {
         console.error('查詢失敗:', error);
@@ -42,9 +54,47 @@ export function OrderDetailPage() {
     fetchOrder();
   }, [orderId]);
 
+  // 獲取地址
+  const fetchAddresses = async (orderData: Order) => {
+    // 上車點地址
+    if (orderData.pickupLocation) {
+      const lat = orderData.pickupLocation.x ?? (orderData.pickupLocation as any).lat;
+      const lng = orderData.pickupLocation.y ?? (orderData.pickupLocation as any).lng;
+      if (lat !== undefined && lng !== undefined) {
+        setLoadingPickup(true);
+        try {
+          const address = await reverseGeocodeWithCache(lat, lng);
+          setPickupAddress(address);
+        } catch {
+          setPickupAddress(`(${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`);
+        } finally {
+          setLoadingPickup(false);
+        }
+      }
+    }
+
+    // 下車點地址
+    if (orderData.dropoffLocation) {
+      const lat = orderData.dropoffLocation.x ?? (orderData.dropoffLocation as any).lat;
+      const lng = orderData.dropoffLocation.y ?? (orderData.dropoffLocation as any).lng;
+      if (lat !== undefined && lng !== undefined) {
+        setLoadingDropoff(true);
+        try {
+          const address = await reverseGeocodeWithCache(lat, lng);
+          setDropoffAddress(address);
+        } catch {
+          setDropoffAddress(`(${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`);
+        } finally {
+          setLoadingDropoff(false);
+        }
+      }
+    }
+  };
+
   const handleAccept = async () => {
     if (!orderId || !driver) return;
 
+    console.log('Accepting order:', orderId, 'driverId:', driver.driverId, 'driver:', driver);
     setAccepting(true);
     try {
       const response = await orderApi.accept(orderId, driver.driverId);
@@ -107,16 +157,24 @@ export function OrderDetailPage() {
           <Typography variant="subtitle2" color="text.secondary">
             📍 上車地點
           </Typography>
-          <Typography sx={{ mb: 2 }}>
-            {order.pickupLocation.address || `(${order.pickupLocation.x}, ${order.pickupLocation.y})`}
-          </Typography>
+          {loadingPickup ? (
+            <Skeleton variant="text" width="80%" sx={{ mb: 2 }} />
+          ) : (
+            <Typography sx={{ mb: 2 }}>
+              {pickupAddress || '載入中...'}
+            </Typography>
+          )}
 
           <Typography variant="subtitle2" color="text.secondary">
             🎯 下車地點
           </Typography>
-          <Typography>
-            {order.dropoffLocation.address || `(${order.dropoffLocation.x}, ${order.dropoffLocation.y})`}
-          </Typography>
+          {loadingDropoff ? (
+            <Skeleton variant="text" width="80%" />
+          ) : (
+            <Typography>
+              {dropoffAddress || '載入中...'}
+            </Typography>
+          )}
         </CardContent>
       </Card>
 

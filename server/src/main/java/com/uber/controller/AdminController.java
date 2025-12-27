@@ -297,6 +297,11 @@ public class AdminController {
         summary.put("vehicleType", order.getVehicleType().name());
         summary.put("createdAt", order.getCreatedAt());
         
+        // 加入地點資訊，讓列表也能顯示地址
+        summary.put("pickupLocation", order.getPickupLocation());
+        summary.put("dropoffLocation", order.getDropoffLocation());
+        summary.put("estimatedFare", order.getEstimatedFare());
+        
         if (order.getDriverId() != null) {
             summary.put("driverId", order.getDriverId());
         }

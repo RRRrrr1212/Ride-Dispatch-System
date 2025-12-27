@@ -35,4 +35,8 @@ export const adminApi = {
   // 更新費率設定
   updateRatePlan: (vehicleType: string, data: Omit<RatePlan, 'vehicleType'>) =>
     apiClient.put<ApiResponse<RatePlan>>(`/admin/rate-plans/${vehicleType}`, data),
+
+  // 創建司機
+  createDriver: (data: { driverId: string; name: string; phone: string; vehiclePlate: string; vehicleType: string }) =>
+    apiClient.post<ApiResponse<Driver>>('/admin/drivers', data),
 };

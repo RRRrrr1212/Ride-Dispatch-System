@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -9,25 +9,185 @@ import {
   CircularProgress,
   Alert,
   Skeleton,
+  Chip,
+  Divider,
+  Avatar,
 } from '@mui/material';
+import {
+  LocationOn as LocationIcon,
+  Flag as FlagIcon,
+  Person as PersonIcon,
+  DirectionsCar as CarIcon,
+} from '@mui/icons-material';
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
 import { useDriverStore } from '../../stores/driver.store';
 import { adminApi } from '../../api/admin.api';
+import { orderApi } from '../../api/order.api';
 import { reverseGeocodeWithCache } from '../../api/geocoding.api';
-import { StatusChip } from '../../components/common/StatusChip';
 import type { Order } from '../../types';
 
-// 儲存地址的快取
-const addressCache: Record<string, string> = {};
-
-// 生成座標的快取 key
-function getCoordKey(location: any): string | null {
+// 從 location 物件取得座標
+function getCoordinates(location: any): { lat: number; lng: number } | null {
   if (!location) return null;
-  const x = location.x ?? location.lat;
-  const y = location.y ?? location.lng;
-  if (x === undefined || y === undefined) return null;
-  return `${Number(x).toFixed(4)},${Number(y).toFixed(4)}`;
+  
+  const rawLat = location.x ?? location.lat ?? location.latitude;
+  const rawLng = location.y ?? location.lng ?? location.longitude;
+  
+  if (rawLat === undefined || rawLng === undefined) return null;
+  
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+
+  if (isNaN(lat) || isNaN(lng)) return null;
+  
+  return { lat, lng };
+}
+
+// 地址顯示組件
+function AddressLine({ location, type, label }: { location: any; type: 'pickup' | 'dropoff'; label: string }) {
+  const [address, setAddress] = useState<string>('載入中...');
+  const [loading, setLoading] = useState(true);
+
+  const coords = getCoordinates(location);
+  const coordKey = coords ? `${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}` : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    const fetchAddress = async () => {
+      if (!coordKey || !coords) {
+        setAddress('未知地點');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const addr = await reverseGeocodeWithCache(coords.lat, coords.lng);
+        if (!cancelled) setAddress(addr);
+      } catch {
+        if (!cancelled) setAddress(`(${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchAddress();
+    return () => { cancelled = true; };
+  }, [coordKey]);
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        pt: 0.5,
+      }}>
+        {type === 'pickup' ? (
+          <LocationIcon sx={{ color: 'success.main', fontSize: 20 }} />
+        ) : (
+          <FlagIcon sx={{ color: 'error.main', fontSize: 20 }} />
+        )}
+      </Box>
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
+          {label}
+        </Typography>
+        {loading ? (
+          <Skeleton variant="text" width="80%" />
+        ) : (
+          <Typography variant="body2" fontWeight={500}>
+            {address}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+// 訂單卡片組件
+function OrderCard({ order, onAccept, accepting }: { 
+  order: Order; 
+  onAccept: (orderId: string) => void;
+  accepting: string | null;
+}) {
+  const isAccepting = accepting === order.orderId;
+
+  return (
+    <Card 
+      sx={{ 
+        mb: 2, 
+        borderRadius: 3,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'visible',
+      }}
+    >
+      <CardContent sx={{ p: 2.5 }}>
+        {/* 頂部：乘客資訊和車資 */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}>
+              <PersonIcon sx={{ fontSize: 20 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                {order.passengerId || '乘客'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {order.vehicleType || 'STANDARD'}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h5" color="success.main" fontWeight="bold">
+              ${order.estimatedFare || order.fare || 70}
+            </Typography>
+            <Chip 
+              label="等待中" 
+              size="small" 
+              color="warning"
+              sx={{ height: 20, fontSize: 11 }}
+            />
+          </Box>
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* 路線資訊 */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+          <AddressLine location={order.pickupLocation} type="pickup" label="上車地點" />
+          
+          {/* 連接線 */}
+          <Box sx={{ ml: 1.2, borderLeft: '2px dashed', borderColor: 'divider', height: 12 }} />
+          
+          <AddressLine location={order.dropoffLocation} type="dropoff" label="下車地點" />
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* 接單按鈕 */}
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          onClick={() => onAccept(order.orderId)}
+          disabled={isAccepting}
+          sx={{ 
+            py: 1.5,
+            borderRadius: 2,
+            fontWeight: 'bold',
+            fontSize: 16,
+          }}
+          startIcon={isAccepting ? <CircularProgress size={20} color="inherit" /> : <CarIcon />}
+        >
+          {isAccepting ? '接單中...' : '接受訂單'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function DashboardPage() {
@@ -37,71 +197,35 @@ export function DashboardPage() {
   const [offers, setOffers] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accepting, setAccepting] = useState<string | null>(null);
   
-  // 地址狀態
-  const [addresses, setAddresses] = useState<Record<string, string>>({});
-  const [loadingAddresses, setLoadingAddresses] = useState<Record<string, boolean>>({});
-  
-  // 司機當前位置 (模擬在台中市政府附近)
   const [driverLocation] = useState<MapLocation>({
     lat: 24.1618,
     lng: 120.6469,
   });
 
-  // 為訂單獲取地址
-  const fetchAddressesForOrders = useCallback(async (orderList: Order[]) => {
-    const coordsToFetch: { key: string; lat: number; lng: number }[] = [];
-    
-    for (const order of orderList) {
-      // 上車點
-      const pickupKey = getCoordKey(order.pickupLocation);
-      if (pickupKey && !addressCache[pickupKey]) {
-        const lat = order.pickupLocation?.x ?? (order.pickupLocation as any)?.lat;
-        const lng = order.pickupLocation?.y ?? (order.pickupLocation as any)?.lng;
-        if (lat !== undefined && lng !== undefined) {
-          coordsToFetch.push({ key: pickupKey, lat, lng });
-        }
+  // 接單處理
+  const handleAcceptOrder = async (orderId: string) => {
+    if (!driver) return;
+
+    setAccepting(orderId);
+    try {
+      const response = await orderApi.accept(orderId, driver.driverId);
+      if (response.data.success) {
+        navigate(`/driver/trip/${orderId}`);
       }
-      
-      // 下車點
-      const dropoffKey = getCoordKey(order.dropoffLocation);
-      if (dropoffKey && !addressCache[dropoffKey]) {
-        const lat = order.dropoffLocation?.x ?? (order.dropoffLocation as any)?.lat;
-        const lng = order.dropoffLocation?.y ?? (order.dropoffLocation as any)?.lng;
-        if (lat !== undefined && lng !== undefined) {
-          coordsToFetch.push({ key: dropoffKey, lat, lng });
-        }
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        alert('此訂單已被其他司機接受');
+        // 刷新訂單列表
+        setOffers(prev => prev.filter(o => o.orderId !== orderId));
+      } else {
+        alert('接單失敗：' + (error.response?.data?.error?.message || error.message));
       }
+    } finally {
+      setAccepting(null);
     }
-
-    // 去重
-    const uniqueCoords = coordsToFetch.filter(
-      (coord, index, self) => self.findIndex(c => c.key === coord.key) === index
-    );
-
-    if (uniqueCoords.length === 0) return;
-
-    // 設置載入狀態
-    const loadingState: Record<string, boolean> = {};
-    uniqueCoords.forEach(c => { loadingState[c.key] = true; });
-    setLoadingAddresses(prev => ({ ...prev, ...loadingState }));
-
-    // 逐個查詢地址
-    for (const coord of uniqueCoords) {
-      try {
-        const address = await reverseGeocodeWithCache(coord.lat, coord.lng);
-        addressCache[coord.key] = address;
-        setAddresses(prev => ({ ...prev, [coord.key]: address }));
-      } catch (error) {
-        console.error('地址查詢失敗:', error);
-        const fallback = `(${coord.lat.toFixed(4)}, ${coord.lng.toFixed(4)})`;
-        addressCache[coord.key] = fallback;
-        setAddresses(prev => ({ ...prev, [coord.key]: fallback }));
-      } finally {
-        setLoadingAddresses(prev => ({ ...prev, [coord.key]: false }));
-      }
-    }
-  }, []);
+  };
 
   useEffect(() => {
     if (!driver || !isOnline) {
@@ -110,24 +234,16 @@ export function DashboardPage() {
     }
 
     const fetchOffers = async () => {
-      setLoading(true);
+      if (offers.length === 0) setLoading(true);
       setError(null);
       try {
-        // 使用 admin API 取得所有 PENDING 訂單 (Demo 用途)
         const response = await adminApi.getOrders({ status: 'PENDING' });
         if (response.data.success && response.data.data) {
-          const orderList = response.data.data.orders || [];
-          setOffers(orderList);
-          
-          // 獲取地址
-          if (orderList.length > 0) {
-            fetchAddressesForOrders(orderList);
-          }
+          setOffers(response.data.data.orders || []);
         }
       } catch (err: any) {
         console.error('取得訂單失敗:', err);
         setError('無法取得訂單列表');
-        setOffers([]);
       } finally {
         setLoading(false);
       }
@@ -136,199 +252,172 @@ export function DashboardPage() {
     fetchOffers();
     const timer = setInterval(fetchOffers, 5000);
     return () => clearInterval(timer);
-  }, [driver, isOnline, fetchAddressesForOrders]);
+  }, [driver, isOnline]);
 
-  // 取得地址顯示
-  const getLocationDisplay = (location: any): { address: string; loading: boolean } => {
-    const key = getCoordKey(location);
-    if (!key) return { address: '未知地點', loading: false };
-    
-    if (addressCache[key]) {
-      return { address: addressCache[key], loading: false };
-    }
-    
-    if (loadingAddresses[key]) {
-      return { address: '', loading: true };
-    }
-    
-    if (addresses[key]) {
-      return { address: addresses[key], loading: false };
-    }
-    
-    const x = location?.x ?? location?.lat ?? 0;
-    const y = location?.y ?? location?.lng ?? 0;
-    return { address: `(${Number(x).toFixed(4)}, ${Number(y).toFixed(4)})`, loading: false };
-  };
-
-  // 建立地圖標記：顯示所有待接訂單的上車點
-  const markers: MapMarker[] = offers.map((order, index) => {
-    const pickupLoc = order.pickupLocation;
+  const markers: MapMarker[] = useMemo(() => offers.map((order, index) => {
+    const coords = getCoordinates(order.pickupLocation);
     return {
       id: order.orderId,
-      position: {
-        lat: pickupLoc?.x ?? (pickupLoc as any)?.lat ?? 24.16 + index * 0.005,
-        lng: pickupLoc?.y ?? (pickupLoc as any)?.lng ?? 120.64 + index * 0.005,
-      },
+      position: coords || { lat: 24.16 + index * 0.005, lng: 120.64 + index * 0.005 },
       type: 'pickup' as const,
-      label: `訂單 ${index + 1}`,
+      label: `$${order.estimatedFare || 70}`,
     };
-  });
+  }), [offers]);
 
   if (!isOnline) {
     return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* 地圖區域 - 離線時也顯示 */}
-        <Box sx={{ height: 250, position: 'relative' }}>
-          <LeafletMap
-            center={driverLocation}
-            zoom={15}
-            markers={[]}
-            driverPosition={driverLocation}
-          />
-          <Box sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            bgcolor: 'rgba(0,0,0,0.8)',
-            color: '#fff',
-            px: 4,
-            py: 2,
-            borderRadius: 2,
-            textAlign: 'center',
-            zIndex: 1000,
-          }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              您目前離線
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              請開啟上方的開關以開始接單
-            </Typography>
-          </Box>
-        </Box>
+      <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
+        {/* 全屏地圖 */}
+        <LeafletMap
+          center={driverLocation}
+          zoom={13}
+          markers={[]}
+          driverPosition={driverLocation}
+        />
         
-        {/* 司機資訊 */}
-        <Box sx={{ p: 2 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">司機資訊</Typography>
-              <Typography variant="h6">{driver?.name || '未登入'}</Typography>
-              <Typography color="text.secondary">{driver?.phone}</Typography>
-              <Typography color="text.secondary">{driver?.vehiclePlate}</Typography>
-            </CardContent>
-          </Card>
+        {/* 離線提示 - 底部面板 */}
+        <Box sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          bgcolor: '#1a1a1a',
+          borderRadius: '24px 24px 0 0',
+          p: 3,
+          zIndex: 1000,
+        }}>
+          {/* 拖曳指示條 */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Box sx={{ width: 40, height: 4, bgcolor: 'grey.600', borderRadius: 2 }} />
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Avatar sx={{ width: 48, height: 48, bgcolor: 'grey.700' }}>
+              {driver?.name?.charAt(0) || '司'}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" color="#fff">{driver?.name || '未登入'}</Typography>
+              <Typography variant="body2" color="grey.400">
+                {driver?.vehiclePlate} • {driver?.phone}
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Typography variant="body2" color="grey.400" sx={{ textAlign: 'center', mb: 1 }}>
+            點擊右上角開關開始上線接單
+          </Typography>
         </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* 地圖區域 - 使用 OpenStreetMap 顯示司機位置和待接訂單 */}
-      <Box sx={{ height: 250, position: 'relative' }}>
-        <LeafletMap
-          center={driverLocation}
-          zoom={14}
-          markers={markers}
-          driverPosition={driverLocation}
-        />
-        
-        {/* 上線狀態提示 */}
-        <Box sx={{
-          position: 'absolute',
-          top: 10,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          bgcolor: 'success.main',
-          color: '#fff',
-          px: 2,
-          py: 0.5,
-          borderRadius: 1,
-          zIndex: 1000,
+    <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
+      {/* 全屏地圖 */}
+      <LeafletMap
+        center={driverLocation}
+        zoom={14}
+        markers={markers}
+        driverPosition={driverLocation}
+      />
+
+      {/* 底部訂單面板 */}
+      <Box sx={{ 
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        maxHeight: '55%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#1a1a1a',
+        borderRadius: '24px 24px 0 0',
+        zIndex: 1000,
+        overflow: 'hidden',
+      }}>
+        {/* 拖曳指示條 */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          pt: 1.5,
+          pb: 1,
+          flexShrink: 0,
         }}>
-          <Typography variant="body2">🟢 上線中 - 等待訂單</Typography>
+          <Box sx={{ 
+            width: 40, 
+            height: 4, 
+            bgcolor: 'grey.600', 
+            borderRadius: 2 
+          }} />
         </Box>
-      </Box>
 
-      {/* 訂單列表 */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          可接訂單 ({offers.length})
-        </Typography>
+        {/* 標題列 */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          px: 2.5,
+          pb: 1.5,
+          flexShrink: 0,
+        }}>
+          <Typography variant="h6" fontWeight="bold" color="#fff">
+            可接訂單
+          </Typography>
+          <Chip 
+            label={`${offers.length} 筆`} 
+            size="small" 
+            sx={{ 
+              bgcolor: 'success.main',
+              color: '#fff',
+              fontWeight: 600,
+            }}
+          />
+        </Box>
 
-        {loading && offers.length === 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
+        {/* 可滑動的訂單列表 */}
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          px: 2,
+          pb: 3,
+          // 隱藏滾動條
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE/Edge
+        }}>
+          {loading && offers.length === 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress sx={{ color: '#fff' }} />
+            </Box>
+          )}
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-        {!loading && !error && offers.length === 0 && (
-          <Alert severity="info">
-            目前沒有可接的訂單，請稍後再試
-          </Alert>
-        )}
-
-        {offers.map((order) => {
-          const pickupDisplay = getLocationDisplay(order.pickupLocation);
-          const dropoffDisplay = getLocationDisplay(order.dropoffLocation);
-          
-          return (
-            <Card key={order.orderId} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="subtitle2">
-                    訂單 #{order.orderId?.slice(0, 8) || 'N/A'}
-                  </Typography>
-                  <StatusChip status={order.status || 'PENDING'} />
-                </Box>
-
-                {/* 上車點 */}
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main', mr: 1, mt: 0.5, flexShrink: 0 }} />
-                  {pickupDisplay.loading ? (
-                    <Skeleton variant="text" width="70%" />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-                      {pickupDisplay.address}
-                    </Typography>
-                  )}
-                </Box>
-                
-                {/* 下車點 */}
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'error.main', mr: 1, mt: 0.5, flexShrink: 0 }} />
-                  {dropoffDisplay.loading ? (
-                    <Skeleton variant="text" width="70%" />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-                      {dropoffDisplay.address}
-                    </Typography>
-                  )}
-                </Box>
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography color="primary" fontWeight="bold">
-                    💰 ${order.estimatedFare || order.fare || 150}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/driver/order/${order.orderId}`)}
-                    data-testid={`btn-view-order-${order.orderId}`}
-                  >
-                    查看詳情
-                  </Button>
-                </Box>
-              </CardContent>
+          {!loading && !error && offers.length === 0 && (
+            <Card sx={{ borderRadius: 3, textAlign: 'center', py: 4, bgcolor: '#2a2a2a' }}>
+              <Typography variant="h1" sx={{ fontSize: 48, mb: 1 }}>🚗</Typography>
+              <Typography color="grey.400">目前沒有可接的訂單</Typography>
+              <Typography variant="body2" color="grey.500">請稍後再試</Typography>
             </Card>
-          );
-        })}
+          )}
+
+          {offers.map((order) => (
+            <OrderCard 
+              key={order.orderId} 
+              order={order} 
+              onAccept={handleAcceptOrder}
+              accepting={accepting}
+            />
+          ))}
+        </Box>
       </Box>
     </Box>
   );
 }
+

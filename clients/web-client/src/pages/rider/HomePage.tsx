@@ -7,7 +7,16 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  InputBase,
+  Paper,
+  IconButton,
 } from '@mui/material';
+import {
+  Search as SearchIcon,
+  Schedule as ScheduleIcon,
+  Work as WorkIcon,
+  Home as HomeIcon,
+} from '@mui/icons-material';
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
 import { reverseGeocodeWithCache } from '../../api/geocoding.api';
@@ -55,78 +64,187 @@ export function HomePage() {
   ] : [];
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* 地圖區域 - 使用 OpenStreetMap */}
-      <Box sx={{ flex: 1, position: 'relative' }}>
-        <LeafletMap
-          center={{ lat: 24.1618, lng: 120.6469 }}  // 台中市政府
-          zoom={15}
-          markers={selectionMode ? [] : markers}  // 選點模式時不顯示標記，因為有中心大頭針
-          selectionMode={selectionMode}
-          showCenterPin={selectionMode !== null}
-          onCenterChange={handleCenterChange}
-        />
-      </Box>
+    <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
+      {/* 全屏地圖 */}
+      <LeafletMap
+        center={{ lat: 24.1618, lng: 120.6469 }}  // 台中市政府
+        zoom={15}
+        markers={selectionMode ? [] : markers}
+        selectionMode={selectionMode}
+        showCenterPin={selectionMode !== null}
+        onCenterChange={handleCenterChange}
+      />
 
-      {/* 底部卡片 */}
-      <Card sx={{ borderRadius: '16px 16px 0 0', mt: -2, position: 'relative', zIndex: 1 }}>
-        <CardContent sx={{ p: 2 }}>
-          {!selectionMode ? (
-            <>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                你好！要去哪裡？
-              </Typography>
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={handleStartSelection}
-                data-testid="btn-start-ride"
+      {/* 底部面板 */}
+      <Box sx={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        bgcolor: '#1a1a1a', // 深色主題
+        borderRadius: '24px 24px 0 0',
+        p: 2,
+        zIndex: 1000,
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.5)',
+      }}>
+        {/* 拖曳指示條 */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <Box sx={{ width: 40, height: 4, bgcolor: 'grey.700', borderRadius: 2 }} />
+        </Box>
+
+        {!selectionMode ? (
+          <>
+            <Typography variant="h5" fontWeight="bold" color="white" sx={{ mb: 2, px: 1 }}>
+              你好！要去哪裡？
+            </Typography>
+
+            {/* 搜尋欄位 */}
+            <Paper
+              onClick={handleStartSelection}
+              sx={{
+                p: '2px 4px',
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                bgcolor: '#2a2a2a', // 深色輸入框
+                borderRadius: 3,
+                mb: 3,
+                cursor: 'pointer',
+                boxShadow: 'none',
+              }}
+            >
+              <IconButton sx={{ p: '10px', color: 'white' }} aria-label="search">
+                <SearchIcon />
+              </IconButton>
+              <InputBase
+                sx={{ ml: 1, flex: 1, color: 'white', fontWeight: 500 }}
+                placeholder="搜尋目的地"
+                readOnly
+                inputProps={{ style: { cursor: 'pointer' } }}
+              />
+              <IconButton 
+                type="button" 
+                sx={{ p: '10px', color: 'white', bgcolor: '#333', mr: 0.5, '&:hover': { bgcolor: '#444' } }}
               >
-                開始叫車
-              </Button>
-            </>
-          ) : (
-            <>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                📍 上車地點
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, minHeight: 24 }}>
+                 <ScheduleIcon fontSize="small" />
+              </IconButton>
+            </Paper>
+
+            {/* 快捷地點 */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 1, overflowX: 'auto', pb: 1 }}>
+               <Box 
+                 sx={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: 1.5, 
+                   bgcolor: '#2a2a2a', 
+                   px: 2, 
+                   py: 1, 
+                   borderRadius: 10,
+                   color: 'white',
+                   minWidth: 'fit-content',
+                 }}
+               >
+                 <Box sx={{ bgcolor: '#333', p: 0.5, borderRadius: '50%', display: 'flex' }}>
+                   <WorkIcon fontSize="small" sx={{ color: 'grey.300' }} />
+                 </Box>
+                 <Typography variant="body2" fontWeight={500}>公司</Typography>
+               </Box>
+               
+               <Box 
+                 sx={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: 1.5, 
+                   bgcolor: '#2a2a2a', 
+                   px: 2, 
+                   py: 1, 
+                   borderRadius: 10,
+                   color: 'white',
+                   minWidth: 'fit-content',
+                 }}
+               >
+                 <Box sx={{ bgcolor: '#333', p: 0.5, borderRadius: '50%', display: 'flex' }}>
+                   <HomeIcon fontSize="small" sx={{ color: 'grey.300' }} />
+                 </Box>
+                 <Typography variant="body2" fontWeight={500}>家</Typography>
+               </Box>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Typography variant="h6" color="white" sx={{ mb: 1, px: 1 }}>
+              設定上車地點
+            </Typography>
+            
+            <Box sx={{ 
+              bgcolor: '#2a2a2a', 
+              borderRadius: 3, 
+              p: 2, 
+              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2 
+            }}>
+              <Box sx={{ 
+                width: 8, 
+                height: 8, 
+                borderRadius: '50%', 
+                bgcolor: 'success.main',
+                flexShrink: 0 
+              }} />
+              
+              <Box sx={{ flex: 1 }}>
                 {isLoadingAddress ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CircularProgress size={16} />
-                    <Typography variant="body2" color="text.secondary">
+                    <CircularProgress size={16} color="inherit" sx={{ color: 'grey.500' }} />
+                    <Typography variant="body2" color="grey.500">
                       查詢地址中...
                     </Typography>
                   </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body1" color="white" fontWeight={500}>
                     {pickupAddress || '拖曳地圖選擇位置'}
                   </Typography>
                 )}
+                {!isLoadingAddress && pickupAddress && (
+                  <Typography variant="caption" color="grey.500">
+                    鄰近的地標
+                  </Typography>
+                )}
               </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setSelectionMode(null)}
-                  sx={{ flex: 1 }}
-                >
-                  取消
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleConfirmLocation}
-                  disabled={!pickupLocation || isLoadingAddress}
-                  sx={{ flex: 1 }}
-                  data-testid="btn-confirm-pickup"
-                >
-                  確認上車點
-                </Button>
-              </Box>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => setSelectionMode(null)}
+                sx={{ flex: 1, color: 'white', borderColor: 'grey.700', py: 1.5, borderRadius: 2 }}
+              >
+                取消
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmLocation}
+                disabled={!pickupLocation || isLoadingAddress}
+                sx={{ 
+                  flex: 2, 
+                  py: 1.5, 
+                  borderRadius: 2, 
+                  bgcolor: 'white', 
+                  color: 'black',
+                  fontWeight: 'bold',
+                  '&:hover': { bgcolor: 'grey.200' },
+                  '&:disabled': { bgcolor: 'grey.800', color: 'grey.600' }
+                }}
+              >
+                確認上車點
+              </Button>
+            </Box>
+          </>
+        )}
+      </Box>
     </Box>
   );
 }
