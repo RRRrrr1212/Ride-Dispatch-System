@@ -1,6 +1,5 @@
 package com.uber.passenger;
 
-import com.uber.client.util.Theme;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -16,20 +15,25 @@ public class PassengerApp extends Application {
     
     @Override
     public void start(Stage primaryStage) {
-        MainController controller = new MainController();
-        Scene scene = new Scene(controller.getRoot(), WINDOW_WIDTH, WINDOW_HEIGHT);
-        
-        // 應用樣式表
-        scene.getStylesheets().add("data:text/css," + 
-            Theme.getBaseStyles().replace("\n", " ").replace("\\s+", " "));
-        
-        primaryStage.setTitle("Uber");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(false);
-        primaryStage.setOnCloseRequest(e -> {
-            controller.shutdown();
-        });
-        primaryStage.show();
+        try {
+            MainController controller = new MainController();
+            Scene scene = new Scene(controller.getRoot(), WINDOW_WIDTH, WINDOW_HEIGHT);
+            
+            // 不使用樣式表，直接在控制器中設置樣式
+            // 樣式已經在 Theme 類中設置
+            
+            primaryStage.setTitle("Uber");
+            primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
+            primaryStage.setOnCloseRequest(e -> {
+                controller.shutdown();
+            });
+            primaryStage.show();
+        } catch (Exception e) {
+            System.err.println("啟動失敗: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("啟動失敗: " + e.getMessage(), e);
+        }
     }
     
     public static void main(String[] args) {

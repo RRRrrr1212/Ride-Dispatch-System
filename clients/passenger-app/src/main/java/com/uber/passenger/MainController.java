@@ -510,7 +510,10 @@ public class MainController {
         title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 18));
         title.setTextFill(Color.WHITE);
         
-        navbar.getChildren().addAll(backNavBtn, spacer, title, spacer);
+        Region spacer2 = new Region();
+        HBox.setHgrow(spacer2, Priority.ALWAYS);
+        
+        navbar.getChildren().addAll(backNavBtn, spacer, title, spacer2);
         return navbar;
     }
     
@@ -720,6 +723,13 @@ public class MainController {
     // ============================================
     
     private void calculateEstimate() {
+        // 防止欄位未初始化時的 NullPointerException
+        if (pickupXField == null || pickupYField == null || 
+            dropoffXField == null || dropoffYField == null ||
+            estimatedFareLabel == null) {
+            return;
+        }
+        
         try {
             double pickupX = Double.parseDouble(pickupXField.getText());
             double pickupY = Double.parseDouble(pickupYField.getText());
