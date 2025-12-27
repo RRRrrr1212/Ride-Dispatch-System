@@ -25,29 +25,18 @@ mvn spring-boot:run
 可以在此觀察訂單與司機的即時狀態變化。
 ```bash
 # 開啟新終端機
-cd clients/admin-app
-mvn javafx:run
+cd clients/web-client
+npm run dev
 ```
 
-### 3. 開啟司機端並上線
-```bash
-# 開啟新終端機
-cd clients/driver-app
-mvn javafx:run
-```
-- 填寫登入資訊 (或使用預設測試帳號)
-- 點擊 **"上線"** 按鈕
-- 確保狀態變為 **IDLE (線上)**
+### 3. 在瀏覽器開啟各端頁面
+請開啟瀏覽器 (建議使用 Chrome) 並訪問以下網址：
 
-### 4. 開啟乘客端並叫車
-```bash
-# 開啟新終端機
-cd clients/passenger-app
-mvn javafx:run
-```
-- 設定上車點與下車點座標
-- 選擇車種 (UberX / UberBlack)
-- 點擊 **"立即叫車"**
+- **管理後台**: `http://localhost:5173/login` (選擇 "管理員" 登入)
+- **司機端**: `http://localhost:5173/login` (選擇 "司機" 登入)
+  - 登入後，點擊右上角 **"上線"** 開關，確保狀態變為 **上線中**。
+- **乘客端**: `http://localhost:5173/login` (選擇 "乘客" 登入)
+  - 登入後即可看到地圖並開始叫車。
 
 ### 5. 司機接單與行程流程
 1. **接單**: 司機列表出現新訂單，點擊 **"接單"**。

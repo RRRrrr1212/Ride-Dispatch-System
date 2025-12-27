@@ -13,6 +13,12 @@ import lombok.NoArgsConstructor;
 public class Location {
     private double x;
     private double y;
+    private String address;
+    
+    public Location(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
     
     /**
      * 計算與另一點的歐幾里得距離
