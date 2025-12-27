@@ -5,46 +5,45 @@ import com.uber.client.api.ApiResponse;
 import com.uber.client.model.*;
 import com.uber.client.util.Theme;
 import com.uber.client.util.UIUtils;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.CompletableFuture;
-
 /**
- * 乘客端主控制器
+ * 乘客端主控制器 - Uber 風格現代 UI
  */
 public class MainController {
     
-    private final BorderPane root;
+    private final StackPane root;
     private final ApiClient apiClient;
     private final String passengerId;
     
     private Order currentOrder;
     private Timeline pollingTimeline;
+    private VehicleType selectedVehicleType = VehicleType.STANDARD;
     
-    // UI Components
-    private VBox homeView;
-    private VBox orderView;
+    // Views
+    private BorderPane homeView;
+    private BorderPane orderView;
     
     // Home View Components
     private TextField pickupXField;
     private TextField pickupYField;
     private TextField dropoffXField;
     private TextField dropoffYField;
-    private ComboBox<VehicleType> vehicleTypeCombo;
     private Label estimatedFareLabel;
     private Button createOrderBtn;
+    private VBox standardCard, premiumCard, xlCard;
     
     // Order View Components
     private Label orderStatusLabel;
@@ -52,389 +51,601 @@ public class MainController {
     private Label pickupLabel;
     private Label dropoffLabel;
     private Label fareLabel;
-    private VBox tripProgressBox;
+    private HBox progressBox;
     private Button cancelBtn;
+    private Button backBtn;
     
     public MainController() {
         this.apiClient = new ApiClient();
         this.passengerId = "passenger-" + System.currentTimeMillis() % 1000;
-        this.root = new BorderPane();
+        this.root = new StackPane();
         
         initUI();
         showHomeView();
     }
     
-    public BorderPane getRoot() {
+    public StackPane getRoot() {
         return root;
     }
     
     private void initUI() {
-        root.setStyle("-fx-background-color: " + Theme.BG_DARK + ";");
+        root.setStyle("-fx-background-color: " + Theme.BG_BLACK + ";");
         createHomeView();
         createOrderView();
     }
     
+    // ============================================
+    // 首頁視圖 - Uber 風格
+    // ============================================
+    
     private void createHomeView() {
-        homeView = new VBox(20);
-        homeView.setPadding(new Insets(30));
-        homeView.setAlignment(Pos.TOP_CENTER);
+        homeView = new BorderPane();
+        homeView.setStyle("-fx-background-color: " + Theme.BG_BLACK + ";");
         
-        // Header
-        Label titleLabel = new Label("🚕 叫車服務");
-        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
-        titleLabel.setTextFill(Color.WHITE);
+        // 頂部導航列
+        HBox navbar = createNavbar();
+        homeView.setTop(navbar);
         
-        Label subtitleLabel = new Label("隨時隨地，安全出行");
-        subtitleLabel.setFont(Font.font("Microsoft JhengHei", 14));
-        subtitleLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        // 地圖區域 + 底部面板
+        VBox mainContent = new VBox(0);
         
-        VBox headerBox = new VBox(8, titleLabel, subtitleLabel);
-        headerBox.setAlignment(Pos.CENTER);
+        // 地圖視覺化區域
+        StackPane mapArea = createMapArea();
         
-        // 上車地點
-        VBox pickupCard = createLocationCard("📍 上車地點", true);
+        // 底部面板（可滑動）
+        ScrollPane bottomSheet = createBottomSheet();
+        VBox.setVgrow(bottomSheet, Priority.ALWAYS);
         
-        // 下車地點
-        VBox dropoffCard = createLocationCard("🎯 下車地點", false);
+        mainContent.getChildren().addAll(mapArea, bottomSheet);
+        homeView.setCenter(mainContent);
+    }
+    
+    private HBox createNavbar() {
+        HBox navbar = new HBox();
+        navbar.setStyle(Theme.getNavbarStyle());
+        navbar.setAlignment(Pos.CENTER_LEFT);
+        navbar.setPrefHeight(56);
+        navbar.setPadding(new Insets(0, 20, 0, 20));
         
-        // 車種選擇
-        VBox vehicleCard = createVehicleCard();
+        // Logo
+        Label logo = new Label("Uber");
+        logo.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
+        logo.setTextFill(Color.WHITE);
         
-        // 預估車資
-        VBox fareCard = new VBox(10);
-        fareCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        fareCard.setPadding(new Insets(20));
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        Label fareTitle = new Label("💰 預估車資");
-        fareTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        fareTitle.setTextFill(Color.WHITE);
-        
-        estimatedFareLabel = new Label("--");
-        estimatedFareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 32));
-        estimatedFareLabel.setTextFill(Color.web(Theme.SUCCESS));
-        
-        fareCard.getChildren().addAll(fareTitle, estimatedFareLabel);
-        fareCard.setAlignment(Pos.CENTER);
-        
-        // 叫車按鈕
-        createOrderBtn = new Button("🚗 立即叫車");
-        createOrderBtn.setMaxWidth(Double.MAX_VALUE);
-        createOrderBtn.setStyle("""
-            -fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00);
+        // 用戶按鈕
+        Button userBtn = new Button("👤 登入");
+        userBtn.setStyle("""
+            -fx-background-color: transparent;
             -fx-text-fill: white;
-            -fx-font-size: 18px;
-            -fx-font-weight: bold;
-            -fx-padding: 16 32;
-            -fx-background-radius: 12;
+            -fx-font-size: 14px;
             -fx-cursor: hand;
             """);
+        
+        navbar.getChildren().addAll(logo, spacer, userBtn);
+        return navbar;
+    }
+    
+    private StackPane createMapArea() {
+        StackPane mapArea = new StackPane();
+        mapArea.setPrefHeight(280);
+        mapArea.setMinHeight(280);
+        mapArea.setMaxHeight(280);
+        
+        // 地圖背景漸層
+        mapArea.setStyle("""
+            -fx-background-color: linear-gradient(to bottom, 
+                #1a1a2e 0%, 
+                #16213e 50%, 
+                #0f0f23 100%);
+            """);
+        
+        // 模擬地圖網格
+        VBox gridOverlay = new VBox(20);
+        gridOverlay.setAlignment(Pos.CENTER);
+        gridOverlay.setOpacity(0.3);
+        
+        for (int i = 0; i < 5; i++) {
+            HBox row = new HBox(20);
+            row.setAlignment(Pos.CENTER);
+            for (int j = 0; j < 8; j++) {
+                Circle dot = new Circle(2, Color.web("#4a4a6a"));
+                row.getChildren().add(dot);
+            }
+            gridOverlay.getChildren().add(row);
+        }
+        
+        // 地圖標記
+        VBox markers = new VBox(10);
+        markers.setAlignment(Pos.CENTER);
+        
+        Label mapIcon = new Label("📍");
+        mapIcon.setFont(Font.font(48));
+        
+        Label mapHint = new Label("拖動地圖選擇位置");
+        mapHint.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        mapHint.setFont(Font.font("Microsoft JhengHei", 14));
+        
+        markers.getChildren().addAll(mapIcon, mapHint);
+        
+        mapArea.getChildren().addAll(gridOverlay, markers);
+        return mapArea;
+    }
+    
+    private ScrollPane createBottomSheet() {
+        VBox content = new VBox(20);
+        content.setStyle(Theme.getBottomSheetStyle());
+        content.setPadding(new Insets(24, 20, 40, 20));
+        
+        // 拖動把手
+        HBox handle = new HBox();
+        handle.setAlignment(Pos.CENTER);
+        Rectangle handleBar = new Rectangle(40, 4);
+        handleBar.setArcWidth(4);
+        handleBar.setArcHeight(4);
+        handleBar.setFill(Color.web("#444444"));
+        handle.getChildren().add(handleBar);
+        handle.setPadding(new Insets(0, 0, 16, 0));
+        
+        // 標題區域
+        VBox titleBox = new VBox(4);
+        Label greeting = new Label("🚕 開始搭乘");
+        greeting.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
+        greeting.setTextFill(Color.WHITE);
+        
+        Label subtitle = new Label("隨時隨地，安全出行");
+        subtitle.setFont(Font.font("Microsoft JhengHei", 14));
+        subtitle.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        titleBox.getChildren().addAll(greeting, subtitle);
+        
+        // 地點輸入區域
+        VBox locationInputs = createLocationInputs();
+        
+        // 車種選擇區域
+        VBox vehicleSelection = createVehicleSelection();
+        
+        // 預估車資區域
+        HBox fareRow = createFareRow();
+        
+        // 叫車按鈕
+        createOrderBtn = new Button("🚕 確認叫車");
+        createOrderBtn.setMaxWidth(Double.MAX_VALUE);
+        createOrderBtn.setStyle(Theme.getPrimaryButtonStyle());
         createOrderBtn.setOnAction(e -> createOrder());
         
-        // 輸入變更時計算預估車資
+        content.getChildren().addAll(
+            handle,
+            titleBox,
+            locationInputs,
+            vehicleSelection,
+            fareRow,
+            createOrderBtn
+        );
+        
+        // 滾動面板 - 修復滑動問題
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setStyle("""
+            -fx-background-color: #141414;
+            -fx-background: #141414;
+            """);
+        
+        // 添加輸入監聽器
+        setupInputListeners();
+        
+        return scrollPane;
+    }
+    
+    private VBox createLocationInputs() {
+        VBox container = new VBox(12);
+        
+        // 上車地點
+        VBox pickupBox = new VBox(8);
+        HBox pickupHeader = new HBox(8);
+        pickupHeader.setAlignment(Pos.CENTER_LEFT);
+        
+        Circle pickupDot = new Circle(6, Color.web(Theme.UBER_GREEN));
+        Label pickupLabel = new Label("上車地點");
+        pickupLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        pickupLabel.setFont(Font.font("Microsoft JhengHei", 12));
+        pickupHeader.getChildren().addAll(pickupDot, pickupLabel);
+        
+        HBox pickupInputRow = new HBox(12);
+        pickupInputRow.setAlignment(Pos.CENTER_LEFT);
+        
+        pickupXField = createCoordInput("X 座標");
+        pickupYField = createCoordInput("Y 座標");
+        pickupXField.setText("20");
+        pickupYField.setText("30");
+        
+        pickupInputRow.getChildren().addAll(
+            createCoordWrapper("X", pickupXField),
+            createCoordWrapper("Y", pickupYField)
+        );
+        
+        pickupBox.getChildren().addAll(pickupHeader, pickupInputRow);
+        
+        // 連接線
+        VBox connector = new VBox(2);
+        connector.setAlignment(Pos.CENTER_LEFT);
+        connector.setPadding(new Insets(0, 0, 0, 3));
+        for (int i = 0; i < 3; i++) {
+            Circle dot = new Circle(2, Color.web("#444444"));
+            connector.getChildren().add(dot);
+        }
+        
+        // 下車地點
+        VBox dropoffBox = new VBox(8);
+        HBox dropoffHeader = new HBox(8);
+        dropoffHeader.setAlignment(Pos.CENTER_LEFT);
+        
+        Rectangle dropoffSquare = new Rectangle(12, 12);
+        dropoffSquare.setFill(Color.web(Theme.ERROR));
+        dropoffSquare.setArcWidth(3);
+        dropoffSquare.setArcHeight(3);
+        Label dropoffLabel = new Label("下車地點");
+        dropoffLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        dropoffLabel.setFont(Font.font("Microsoft JhengHei", 12));
+        dropoffHeader.getChildren().addAll(dropoffSquare, dropoffLabel);
+        
+        HBox dropoffInputRow = new HBox(12);
+        dropoffInputRow.setAlignment(Pos.CENTER_LEFT);
+        
+        dropoffXField = createCoordInput("X 座標");
+        dropoffYField = createCoordInput("Y 座標");
+        dropoffXField.setText("60");
+        dropoffYField.setText("80");
+        
+        dropoffInputRow.getChildren().addAll(
+            createCoordWrapper("X", dropoffXField),
+            createCoordWrapper("Y", dropoffYField)
+        );
+        
+        dropoffBox.getChildren().addAll(dropoffHeader, dropoffInputRow);
+        
+        container.getChildren().addAll(pickupBox, connector, dropoffBox);
+        return container;
+    }
+    
+    private TextField createCoordInput(String placeholder) {
+        TextField field = new TextField();
+        field.setPromptText(placeholder);
+        field.setPrefWidth(100);
+        field.setStyle(Theme.getInputStyle());
+        return field;
+    }
+    
+    private HBox createCoordWrapper(String label, TextField field) {
+        HBox wrapper = new HBox(8);
+        wrapper.setAlignment(Pos.CENTER_LEFT);
+        
+        Label lbl = new Label(label);
+        lbl.setTextFill(Color.web(Theme.TEXT_TERTIARY));
+        lbl.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 14));
+        lbl.setMinWidth(20);
+        
+        HBox.setHgrow(field, Priority.ALWAYS);
+        wrapper.getChildren().addAll(lbl, field);
+        return wrapper;
+    }
+    
+    private VBox createVehicleSelection() {
+        VBox container = new VBox(12);
+        
+        Label title = new Label("選擇車種");
+        title.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 14));
+        
+        HBox cards = new HBox(12);
+        cards.setAlignment(Pos.CENTER);
+        
+        standardCard = createVehicleCard("🚗", "菁英", "$15/km", VehicleType.STANDARD, true);
+        premiumCard = createVehicleCard("🚘", "尊榮", "$25/km", VehicleType.PREMIUM, false);
+        xlCard = createVehicleCard("🚐", "大型", "$30/km", VehicleType.XL, false);
+        
+        HBox.setHgrow(standardCard, Priority.ALWAYS);
+        HBox.setHgrow(premiumCard, Priority.ALWAYS);
+        HBox.setHgrow(xlCard, Priority.ALWAYS);
+        
+        cards.getChildren().addAll(standardCard, premiumCard, xlCard);
+        container.getChildren().addAll(title, cards);
+        return container;
+    }
+    
+    private VBox createVehicleCard(String emoji, String name, String price, VehicleType type, boolean selected) {
+        VBox card = new VBox(8);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(16, 12, 16, 12));
+        card.setStyle(selected ? Theme.getSelectedCardStyle() : Theme.getUnselectedCardStyle());
+        
+        Label emojiLabel = new Label(emoji);
+        emojiLabel.setFont(Font.font(28));
+        
+        Label nameLabel = new Label(name);
+        nameLabel.setTextFill(Color.WHITE);
+        nameLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 14));
+        
+        Label priceLabel = new Label(price);
+        priceLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        priceLabel.setFont(Font.font("Microsoft JhengHei", 12));
+        
+        card.getChildren().addAll(emojiLabel, nameLabel, priceLabel);
+        
+        // 點擊選擇
+        card.setOnMouseClicked(e -> selectVehicleType(type));
+        
+        return card;
+    }
+    
+    private void selectVehicleType(VehicleType type) {
+        selectedVehicleType = type;
+        
+        standardCard.setStyle(type == VehicleType.STANDARD ? 
+            Theme.getSelectedCardStyle() : Theme.getUnselectedCardStyle());
+        premiumCard.setStyle(type == VehicleType.PREMIUM ? 
+            Theme.getSelectedCardStyle() : Theme.getUnselectedCardStyle());
+        xlCard.setStyle(type == VehicleType.XL ? 
+            Theme.getSelectedCardStyle() : Theme.getUnselectedCardStyle());
+        
+        calculateEstimate();
+    }
+    
+    private HBox createFareRow() {
+        HBox row = new HBox();
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(16, 20, 16, 20));
+        row.setStyle(Theme.getCardStyle());
+        
+        VBox labelBox = new VBox(4);
+        Label fareTitle = new Label("預估車資");
+        fareTitle.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        fareTitle.setFont(Font.font("Microsoft JhengHei", 14));
+        
+        Label fareNote = new Label("包含基本費 + 里程費");
+        fareNote.setTextFill(Color.web(Theme.TEXT_TERTIARY));
+        fareNote.setFont(Font.font("Microsoft JhengHei", 12));
+        labelBox.getChildren().addAll(fareTitle, fareNote);
+        
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        estimatedFareLabel = new Label("$--");
+        estimatedFareLabel.setTextFill(Color.web(Theme.UBER_GREEN));
+        estimatedFareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
+        
+        row.getChildren().addAll(labelBox, spacer, estimatedFareLabel);
+        return row;
+    }
+    
+    private void setupInputListeners() {
         pickupXField.textProperty().addListener((o, old, n) -> calculateEstimate());
         pickupYField.textProperty().addListener((o, old, n) -> calculateEstimate());
         dropoffXField.textProperty().addListener((o, old, n) -> calculateEstimate());
         dropoffYField.textProperty().addListener((o, old, n) -> calculateEstimate());
-        vehicleTypeCombo.valueProperty().addListener((o, old, n) -> calculateEstimate());
-        
-        homeView.getChildren().addAll(headerBox, pickupCard, dropoffCard, vehicleCard, fareCard, createOrderBtn);
     }
     
-    private VBox createLocationCard(String title, boolean isPickup) {
-        VBox card = new VBox(12);
-        card.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        card.setPadding(new Insets(20));
-        
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        titleLabel.setTextFill(Color.WHITE);
-        
-        HBox coordBox = new HBox(12);
-        coordBox.setAlignment(Pos.CENTER_LEFT);
-        
-        Label xLabel = new Label("X:");
-        xLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
-        xLabel.setFont(Font.font("Microsoft JhengHei", 14));
-        
-        TextField xField = new TextField();
-        xField.setPromptText("0-100");
-        xField.setPrefWidth(100);
-        xField.setStyle("""
-            -fx-background-color: #2A2A2A;
-            -fx-text-fill: white;
-            -fx-border-color: #444444;
-            -fx-border-radius: 8;
-            -fx-background-radius: 8;
-            -fx-padding: 10;
-            """);
-        
-        Label yLabel = new Label("Y:");
-        yLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
-        yLabel.setFont(Font.font("Microsoft JhengHei", 14));
-        
-        TextField yField = new TextField();
-        yField.setPromptText("0-100");
-        yField.setPrefWidth(100);
-        yField.setStyle(xField.getStyle());
-        
-        if (isPickup) {
-            pickupXField = xField;
-            pickupYField = yField;
-            // 預設值
-            pickupXField.setText("20");
-            pickupYField.setText("30");
-        } else {
-            dropoffXField = xField;
-            dropoffYField = yField;
-            // 預設值
-            dropoffXField.setText("60");
-            dropoffYField.setText("80");
-        }
-        
-        coordBox.getChildren().addAll(xLabel, xField, yLabel, yField);
-        card.getChildren().addAll(titleLabel, coordBox);
-        
-        return card;
-    }
-    
-    private VBox createVehicleCard() {
-        VBox card = new VBox(12);
-        card.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        card.setPadding(new Insets(20));
-        
-        Label titleLabel = new Label("🚙 選擇車種");
-        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        titleLabel.setTextFill(Color.WHITE);
-        
-        vehicleTypeCombo = new ComboBox<>();
-        vehicleTypeCombo.getItems().addAll(VehicleType.values());
-        vehicleTypeCombo.setValue(VehicleType.STANDARD);
-        vehicleTypeCombo.setMaxWidth(Double.MAX_VALUE);
-        vehicleTypeCombo.setStyle("""
-            -fx-background-color: #2A2A2A;
-            -fx-border-color: #444444;
-            -fx-border-radius: 8;
-            -fx-background-radius: 8;
-            -fx-padding: 8;
-            """);
-        
-        // 車種說明
-        HBox vehicleInfo = new HBox(20);
-        vehicleInfo.setAlignment(Pos.CENTER);
-        vehicleInfo.setPadding(new Insets(10, 0, 0, 0));
-        
-        vehicleInfo.getChildren().addAll(
-            createVehicleOption("🚗", "標準", "$15/km"),
-            createVehicleOption("🚘", "尊榮", "$25/km"),
-            createVehicleOption("🚐", "大型", "$30/km")
-        );
-        
-        card.getChildren().addAll(titleLabel, vehicleTypeCombo, vehicleInfo);
-        
-        return card;
-    }
-    
-    private VBox createVehicleOption(String emoji, String name, String price) {
-        VBox box = new VBox(4);
-        box.setAlignment(Pos.CENTER);
-        
-        Label emojiLabel = new Label(emoji);
-        emojiLabel.setFont(Font.font(24));
-        
-        Label nameLabel = new Label(name);
-        nameLabel.setTextFill(Color.WHITE);
-        nameLabel.setFont(Font.font("Microsoft JhengHei", 12));
-        
-        Label priceLabel = new Label(price);
-        priceLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
-        priceLabel.setFont(Font.font("Microsoft JhengHei", 10));
-        
-        box.getChildren().addAll(emojiLabel, nameLabel, priceLabel);
-        return box;
-    }
+    // ============================================
+    // 訂單視圖 - Uber 風格
+    // ============================================
     
     private void createOrderView() {
-        orderView = new VBox(20);
-        orderView.setPadding(new Insets(30));
-        orderView.setAlignment(Pos.TOP_CENTER);
+        orderView = new BorderPane();
+        orderView.setStyle("-fx-background-color: " + Theme.BG_BLACK + ";");
         
-        // Header
-        Label titleLabel = new Label("📋 訂單詳情");
-        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
-        titleLabel.setTextFill(Color.WHITE);
+        // 頂部導航列
+        HBox navbar = createOrderNavbar();
+        orderView.setTop(navbar);
+        
+        // 主內容 - 可滑動
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background-color: " + Theme.BG_BLACK + "; -fx-background: " + Theme.BG_BLACK + ";");
+        
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(24, 20, 40, 20));
+        content.setStyle("-fx-background-color: " + Theme.BG_BLACK + ";");
         
         // 狀態卡片
-        VBox statusCard = new VBox(12);
-        statusCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        statusCard.setPadding(new Insets(20));
-        statusCard.setAlignment(Pos.CENTER);
+        VBox statusCard = createStatusCard();
+        
+        // 進度條
+        progressBox = createProgressBar();
+        
+        // 司機資訊卡片
+        VBox driverCard = createDriverCard();
+        
+        // 路線資訊卡片
+        VBox routeCard = createRouteCard();
+        
+        // 車資卡片
+        VBox fareCard = createFareCard();
+        
+        // 按鈕區域
+        VBox buttonArea = createOrderButtons();
+        
+        content.getChildren().addAll(
+            statusCard,
+            progressBox,
+            driverCard,
+            routeCard,
+            fareCard,
+            buttonArea
+        );
+        
+        scrollPane.setContent(content);
+        orderView.setCenter(scrollPane);
+    }
+    
+    private HBox createOrderNavbar() {
+        HBox navbar = new HBox();
+        navbar.setStyle(Theme.getNavbarStyle());
+        navbar.setAlignment(Pos.CENTER_LEFT);
+        navbar.setPrefHeight(56);
+        navbar.setPadding(new Insets(0, 20, 0, 20));
+        
+        Button backNavBtn = new Button("← 返回");
+        backNavBtn.setStyle("""
+            -fx-background-color: transparent;
+            -fx-text-fill: white;
+            -fx-font-size: 16px;
+            -fx-cursor: hand;
+            """);
+        backNavBtn.setOnAction(e -> {
+            if (currentOrder == null || 
+                currentOrder.getStatus() == OrderStatus.COMPLETED ||
+                currentOrder.getStatus() == OrderStatus.CANCELLED) {
+                showHomeView();
+            }
+        });
+        
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        Label title = new Label("訂單詳情");
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 18));
+        title.setTextFill(Color.WHITE);
+        
+        navbar.getChildren().addAll(backNavBtn, spacer, title, spacer);
+        return navbar;
+    }
+    
+    private VBox createStatusCard() {
+        VBox card = new VBox(12);
+        card.setAlignment(Pos.CENTER);
+        card.setStyle(Theme.getCardStyle());
+        card.setPadding(new Insets(24));
         
         Label statusTitle = new Label("訂單狀態");
         statusTitle.setTextFill(Color.web(Theme.TEXT_SECONDARY));
         statusTitle.setFont(Font.font("Microsoft JhengHei", 14));
         
         orderStatusLabel = new Label("等待中...");
-        orderStatusLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
+        orderStatusLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
         orderStatusLabel.setTextFill(Color.web(Theme.WARNING));
         
-        statusCard.getChildren().addAll(statusTitle, orderStatusLabel);
+        card.getChildren().addAll(statusTitle, orderStatusLabel);
+        return card;
+    }
+    
+    private HBox createProgressBar() {
+        HBox box = new HBox(0);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(8, 0, 8, 0));
         
-        // 行程進度
-        tripProgressBox = new VBox(8);
-        tripProgressBox.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        tripProgressBox.setPadding(new Insets(20));
-        createTripProgress();
+        // Will be updated by updateTripProgress
+        return box;
+    }
+    
+    private VBox createDriverCard() {
+        VBox card = new VBox(12);
+        card.setStyle(Theme.getCardStyle());
         
-        // 司機資訊
-        VBox driverCard = new VBox(12);
-        driverCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        driverCard.setPadding(new Insets(20));
-        
-        Label driverTitle = new Label("🚗 司機資訊");
-        driverTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        driverTitle.setTextFill(Color.WHITE);
+        Label title = new Label("🚗 司機資訊");
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        title.setTextFill(Color.WHITE);
         
         driverInfoLabel = new Label("等待司機接單...");
         driverInfoLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
         driverInfoLabel.setFont(Font.font("Microsoft JhengHei", 14));
         driverInfoLabel.setWrapText(true);
         
-        driverCard.getChildren().addAll(driverTitle, driverInfoLabel);
+        card.getChildren().addAll(title, driverInfoLabel);
+        return card;
+    }
+    
+    private VBox createRouteCard() {
+        VBox card = new VBox(16);
+        card.setStyle(Theme.getCardStyle());
         
-        // 路線資訊
-        VBox routeCard = new VBox(12);
-        routeCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        routeCard.setPadding(new Insets(20));
+        Label title = new Label("📍 路線資訊");
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        title.setTextFill(Color.WHITE);
         
-        Label routeTitle = new Label("📍 路線資訊");
-        routeTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        routeTitle.setTextFill(Color.WHITE);
+        VBox routeDetails = new VBox(12);
         
+        HBox pickupRow = new HBox(12);
+        pickupRow.setAlignment(Pos.CENTER_LEFT);
+        Circle pickupDot = new Circle(6, Color.web(Theme.UBER_GREEN));
         pickupLabel = new Label("上車: --");
-        pickupLabel.setTextFill(Color.web(Theme.SUCCESS));
+        pickupLabel.setTextFill(Color.WHITE);
         pickupLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        pickupRow.getChildren().addAll(pickupDot, pickupLabel);
         
+        // 連接線
+        VBox connector = new VBox(2);
+        connector.setPadding(new Insets(0, 0, 0, 3));
+        for (int i = 0; i < 2; i++) {
+            Circle dot = new Circle(2, Color.web("#444444"));
+            connector.getChildren().add(dot);
+        }
+        
+        HBox dropoffRow = new HBox(12);
+        dropoffRow.setAlignment(Pos.CENTER_LEFT);
+        Rectangle dropoffSquare = new Rectangle(12, 12);
+        dropoffSquare.setFill(Color.web(Theme.ERROR));
+        dropoffSquare.setArcWidth(3);
+        dropoffSquare.setArcHeight(3);
         dropoffLabel = new Label("下車: --");
-        dropoffLabel.setTextFill(Color.web(Theme.ERROR));
+        dropoffLabel.setTextFill(Color.WHITE);
         dropoffLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        dropoffRow.getChildren().addAll(dropoffSquare, dropoffLabel);
         
-        routeCard.getChildren().addAll(routeTitle, pickupLabel, dropoffLabel);
+        routeDetails.getChildren().addAll(pickupRow, connector, dropoffRow);
+        card.getChildren().addAll(title, routeDetails);
+        return card;
+    }
+    
+    private VBox createFareCard() {
+        VBox card = new VBox(8);
+        card.setAlignment(Pos.CENTER);
+        card.setStyle(Theme.getCardStyle());
+        card.setPadding(new Insets(20));
         
-        // 車資資訊
-        VBox fareCard = new VBox(12);
-        fareCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
-        fareCard.setPadding(new Insets(20));
-        fareCard.setAlignment(Pos.CENTER);
+        Label title = new Label("💰 車資");
+        title.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        title.setFont(Font.font("Microsoft JhengHei", 14));
         
-        Label fareTitleLabel = new Label("💰 車資");
-        fareTitleLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
-        fareTitleLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        fareLabel = new Label("$--");
+        fareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 32));
+        fareLabel.setTextFill(Color.web(Theme.UBER_GREEN));
         
-        fareLabel = new Label("--");
-        fareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
-        fareLabel.setTextFill(Color.web(Theme.SUCCESS));
+        card.getChildren().addAll(title, fareLabel);
+        return card;
+    }
+    
+    private VBox createOrderButtons() {
+        VBox box = new VBox(12);
         
-        fareCard.getChildren().addAll(fareTitleLabel, fareLabel);
-        
-        // 取消按鈕
         cancelBtn = new Button("❌ 取消訂單");
         cancelBtn.setMaxWidth(Double.MAX_VALUE);
-        cancelBtn.setStyle("""
-            -fx-background-color: linear-gradient(to bottom, #F44336, #D32F2F);
-            -fx-text-fill: white;
-            -fx-font-size: 16px;
-            -fx-font-weight: bold;
-            -fx-padding: 14 28;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """);
+        cancelBtn.setStyle(Theme.getDangerButtonStyle());
         cancelBtn.setOnAction(e -> cancelOrder());
         
-        // 返回首頁按鈕（完成或取消後顯示）
-        Button backBtn = new Button("🏠 返回首頁");
+        backBtn = new Button("🏠 返回首頁");
         backBtn.setMaxWidth(Double.MAX_VALUE);
+        backBtn.setStyle(Theme.getSecondaryButtonStyle());
         backBtn.setVisible(false);
         backBtn.setManaged(false);
-        backBtn.setStyle("""
-            -fx-background-color: #2A2A2A;
-            -fx-border-color: #1976D2;
-            -fx-border-width: 2;
-            -fx-text-fill: white;
-            -fx-font-size: 16px;
-            -fx-font-weight: bold;
-            -fx-padding: 14 28;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """);
         backBtn.setOnAction(e -> {
             currentOrder = null;
             showHomeView();
         });
         
-        orderView.getChildren().addAll(
-            titleLabel, statusCard, tripProgressBox, 
-            driverCard, routeCard, fareCard, 
-            cancelBtn, backBtn
-        );
-    }
-    
-    private void createTripProgress() {
-        tripProgressBox.getChildren().clear();
-        
-        Label title = new Label("🚀 行程進度");
-        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        title.setTextFill(Color.WHITE);
-        
-        HBox progressRow = new HBox(8);
-        progressRow.setAlignment(Pos.CENTER);
-        
-        progressRow.getChildren().addAll(
-            createProgressStep("建立", true),
-            createProgressLine(false),
-            createProgressStep("接單", false),
-            createProgressLine(false),
-            createProgressStep("行駛", false),
-            createProgressLine(false),
-            createProgressStep("完成", false)
-        );
-        
-        tripProgressBox.getChildren().addAll(title, progressRow);
-    }
-    
-    private VBox createProgressStep(String label, boolean active) {
-        VBox box = new VBox(4);
-        box.setAlignment(Pos.CENTER);
-        
-        Circle circle = new Circle(12);
-        circle.setFill(active ? Color.web(Theme.PRIMARY) : Color.web("#444444"));
-        circle.setStroke(active ? Color.web(Theme.PRIMARY_LIGHT) : Color.web("#666666"));
-        circle.setStrokeWidth(2);
-        
-        Label text = new Label(label);
-        text.setTextFill(active ? Color.WHITE : Color.web(Theme.TEXT_SECONDARY));
-        text.setFont(Font.font("Microsoft JhengHei", 11));
-        
-        box.getChildren().addAll(circle, text);
+        box.getChildren().addAll(cancelBtn, backBtn);
         return box;
     }
     
-    private Region createProgressLine(boolean active) {
-        Region line = new Region();
-        line.setPrefWidth(30);
-        line.setPrefHeight(3);
-        line.setStyle("-fx-background-color: " + (active ? Theme.PRIMARY : "#444444") + ";");
-        return line;
-    }
+    // ============================================
+    // 更新方法
+    // ============================================
     
     private void updateTripProgress(OrderStatus status) {
-        tripProgressBox.getChildren().clear();
-        
-        Label title = new Label("🚀 行程進度");
-        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
-        title.setTextFill(Color.WHITE);
-        
-        HBox progressRow = new HBox(8);
-        progressRow.setAlignment(Pos.CENTER);
+        progressBox.getChildren().clear();
         
         int step = switch (status) {
             case PENDING -> 1;
@@ -444,28 +655,69 @@ public class MainController {
             case CANCELLED -> 0;
         };
         
-        progressRow.getChildren().addAll(
-            createProgressStep("建立", step >= 1),
-            createProgressLine(step >= 2),
-            createProgressStep("接單", step >= 2),
-            createProgressLine(step >= 3),
-            createProgressStep("行駛", step >= 3),
-            createProgressLine(step >= 4),
-            createProgressStep("完成", step >= 4)
-        );
+        String[] labels = {"建立", "接單", "行駛", "完成"};
         
-        tripProgressBox.getChildren().addAll(title, progressRow);
+        for (int i = 0; i < 4; i++) {
+            boolean active = i < step;
+            boolean current = i == step - 1;
+            
+            // 進度點
+            VBox stepBox = new VBox(4);
+            stepBox.setAlignment(Pos.CENTER);
+            
+            Circle circle = new Circle(current ? 14 : 10);
+            if (current) {
+                circle.setFill(Color.web(Theme.UBER_GREEN));
+                circle.setEffect(new DropShadow(10, Color.web(Theme.UBER_GREEN)));
+            } else if (active) {
+                circle.setFill(Color.web(Theme.UBER_GREEN));
+            } else {
+                circle.setFill(Color.web("#363636"));
+            }
+            
+            Label lbl = new Label(labels[i]);
+            lbl.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 11));
+            lbl.setTextFill(active ? Color.WHITE : Color.web(Theme.TEXT_TERTIARY));
+            
+            stepBox.getChildren().addAll(circle, lbl);
+            progressBox.getChildren().add(stepBox);
+            
+            // 連接線
+            if (i < 3) {
+                Region line = new Region();
+                line.setPrefWidth(40);
+                line.setPrefHeight(3);
+                line.setMinWidth(40);
+                line.setStyle("-fx-background-color: " + (i < step - 1 ? Theme.UBER_GREEN : "#363636") + ";");
+                
+                HBox lineWrapper = new HBox(line);
+                lineWrapper.setAlignment(Pos.CENTER);
+                lineWrapper.setPadding(new Insets(0, 4, 16, 4));
+                progressBox.getChildren().add(lineWrapper);
+            }
+        }
     }
+    
+    // ============================================
+    // 視圖切換
+    // ============================================
     
     private void showHomeView() {
         stopPolling();
-        root.setCenter(homeView);
+        root.getChildren().clear();
+        root.getChildren().add(homeView);
+        calculateEstimate();
     }
     
     private void showOrderView() {
-        root.setCenter(orderView);
+        root.getChildren().clear();
+        root.getChildren().add(orderView);
         startPolling();
     }
+    
+    // ============================================
+    // 計算預估車資
+    // ============================================
     
     private void calculateEstimate() {
         try {
@@ -475,21 +727,20 @@ public class MainController {
             double dropoffY = Double.parseDouble(dropoffYField.getText());
             
             double distance = Math.sqrt(Math.pow(dropoffX - pickupX, 2) + Math.pow(dropoffY - pickupY, 2));
-            VehicleType type = vehicleTypeCombo.getValue();
             
-            double baseFare = switch (type) {
+            double baseFare = switch (selectedVehicleType) {
                 case STANDARD -> 50;
                 case PREMIUM -> 80;
                 case XL -> 100;
             };
             
-            double perKm = switch (type) {
+            double perKm = switch (selectedVehicleType) {
                 case STANDARD -> 15;
                 case PREMIUM -> 25;
                 case XL -> 30;
             };
             
-            double minFare = switch (type) {
+            double minFare = switch (selectedVehicleType) {
                 case STANDARD -> 70;
                 case PREMIUM -> 120;
                 case XL -> 150;
@@ -499,9 +750,13 @@ public class MainController {
             estimatedFareLabel.setText(String.format("$%.0f", fare));
             
         } catch (NumberFormatException e) {
-            estimatedFareLabel.setText("--");
+            estimatedFareLabel.setText("$--");
         }
     }
+    
+    // ============================================
+    // API 操作
+    // ============================================
     
     private void createOrder() {
         try {
@@ -524,16 +779,15 @@ public class MainController {
             
             Location pickup = new Location(pickupX, pickupY);
             Location dropoff = new Location(dropoffX, dropoffY);
-            VehicleType vehicleType = vehicleTypeCombo.getValue();
             
             createOrderBtn.setDisable(true);
             createOrderBtn.setText("建立中...");
             
-            apiClient.createOrder(passengerId, pickup, dropoff, vehicleType)
+            apiClient.createOrder(passengerId, pickup, dropoff, selectedVehicleType)
                 .whenComplete((response, error) -> {
                     Platform.runLater(() -> {
                         createOrderBtn.setDisable(false);
-                        createOrderBtn.setText("🚗 立即叫車");
+                        createOrderBtn.setText("🚕 確認叫車");
                         
                         if (error != null) {
                             UIUtils.showError("連線錯誤", "無法連接伺服器: " + error.getMessage());
@@ -620,7 +874,7 @@ public class MainController {
         // 更新車資
         Double fare = currentOrder.getActualFare() != null ? 
             currentOrder.getActualFare() : currentOrder.getEstimatedFare();
-        fareLabel.setText(fare != null ? String.format("$%.0f", fare) : "--");
+        fareLabel.setText(fare != null ? String.format("$%.0f", fare) : "$--");
         
         // 更新取消按鈕
         boolean canCancel = status == OrderStatus.PENDING || status == OrderStatus.ACCEPTED;
@@ -629,7 +883,6 @@ public class MainController {
         
         // 完成或取消時顯示返回按鈕
         boolean isFinished = status == OrderStatus.COMPLETED || status == OrderStatus.CANCELLED;
-        Button backBtn = (Button) orderView.getChildren().get(orderView.getChildren().size() - 1);
         backBtn.setVisible(isFinished);
         backBtn.setManaged(isFinished);
         
@@ -637,6 +890,10 @@ public class MainController {
             stopPolling();
         }
     }
+    
+    // ============================================
+    // 輪詢
+    // ============================================
     
     private void startPolling() {
         if (pollingTimeline != null) {

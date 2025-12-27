@@ -6,20 +6,24 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 /**
- * 司機端應用程式入口
+ * Uber 司機端應用程式 - 現代化手機風格 UI
  */
 public class DriverApp extends Application {
     
-    private static final int WINDOW_WIDTH = 420;
-    private static final int WINDOW_HEIGHT = 750;
+    // 模擬手機尺寸
+    private static final int WINDOW_WIDTH = 400;
+    private static final int WINDOW_HEIGHT = 780;
     
     @Override
     public void start(Stage primaryStage) {
         MainController controller = new MainController();
         Scene scene = new Scene(controller.getRoot(), WINDOW_WIDTH, WINDOW_HEIGHT);
-        scene.getStylesheets().add("data:text/css," + Theme.getBaseStyles().replace("\n", " "));
         
-        primaryStage.setTitle("🚗 Uber 司機端");
+        // 應用樣式表
+        scene.getStylesheets().add("data:text/css," + 
+            Theme.getBaseStyles().replace("\n", " ").replace("\\s+", " "));
+        
+        primaryStage.setTitle("Uber Driver");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.setOnCloseRequest(e -> {

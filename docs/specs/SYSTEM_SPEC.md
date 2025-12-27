@@ -52,7 +52,7 @@
 ### 2.2 技術堆疊
 | 層級 | 技術選型 | 版本 | 用途 |
 |-----|---------|-----|-----|
-| Client | JavaFX | 17+ | 桌面 UI 應用程式 |
+| Client | JavaFX | 21+ | 桌面 UI 應用程式 |
 | Server | Spring Boot | 3.x | RESTful API 服務 |
 | Build | Maven | 3.9+ | 專案建構與依賴管理 |
 | Test | JUnit 5 | 5.10+ | 單元與整合測試 |
