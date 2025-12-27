@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import {
   LocalShipping as OrderIcon,
-  DirectionsCar as TripIcon,
+  History as HistoryIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
@@ -55,8 +55,9 @@ export function DriverAppLayout() {
   }, [user, driver, setDriver]);
 
   const getNavValue = () => {
-    if (location.pathname.includes('/history')) return 2;
-    if (location.pathname.includes('/trip')) return 1;
+    if (location.pathname.includes('/profile')) return 2;
+    if (location.pathname.includes('/history')) return 1;
+    if (location.pathname.includes('/trip') || location.pathname.includes('/order')) return 0;
     return 0;
   };
 
@@ -66,10 +67,10 @@ export function DriverAppLayout() {
         navigate('/driver/dashboard');
         break;
       case 1:
-        navigate('/driver/dashboard');
+        navigate('/driver/history');
         break;
       case 2:
-        navigate('/driver/history');
+        navigate('/driver/profile');
         break;
     }
   };
@@ -181,7 +182,7 @@ export function DriverAppLayout() {
         <Outlet />
       </Box>
 
-      {/* 底部導航 */}
+      {/* 底部導航 - 修正按鈕功能 */}
       <Paper
         sx={{
           position: 'fixed',
@@ -195,7 +196,7 @@ export function DriverAppLayout() {
       >
         <BottomNavigation value={getNavValue()} onChange={handleNavChange}>
           <BottomNavigationAction label="訂單" icon={<OrderIcon />} />
-          <BottomNavigationAction label="行程" icon={<TripIcon />} />
+          <BottomNavigationAction label="歷史" icon={<HistoryIcon />} />
           <BottomNavigationAction label="個人" icon={<PersonIcon />} />
         </BottomNavigation>
       </Paper>
