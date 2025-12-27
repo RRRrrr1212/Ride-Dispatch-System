@@ -2,676 +2,671 @@ package com.uber.passenger;
 
 import com.uber.client.api.ApiClient;
 import com.uber.client.model.*;
-import com.uber.client.util.SimulatedMap;
 import com.uber.client.util.Theme;
-import javafx.animation.*;
+import com.uber.client.util.UIUtils;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
+
+/**
+ * 乘客端主控制器
+ */
 public class MainController {
     
-    private final StackPane root;
+    private final BorderPane root;
     private final ApiClient apiClient;
-    private String passengerId;
+    private final String passengerId;
     
-    // 狀態管理
-    private SimulatedMap map;
-    private boolean isSelectingPickup = true; // true: 正在選上車點, false: 選下車點
-    private boolean isInLocationSelectionMode = false;
-    
-    // 數據模型 (預設座標：台中市政府)
-    // 注意：SimulatedMap 期望 setCenter(Lon, Lat)，但通常 Location 模型是 (Lat, Lon) 或 (X, Y)
-    // 我們的 Location 模型是 (x=Lat, y=Lon) ?? 
-    // Wait, Location.java: "private double x; private double y;" usually X=Lon, Y=Lat.
-    // Let's verify standard usage. If Server uses X, Y. 
-    // Code in draw/simulated map: "setCenter(lon, lat)" so X=Lon.
-    
-    // 但此控制器用 double[] pickupLocation. 
-    // 下面 generateAddress logic (dLat, dLon). 
-    // Let's assume index 0 = Lat, index 1 = Lon for existing logic consistency in this file.
-    private final double[] pickupLocation = new double[]{24.1618, 120.6469}; // Lat, Lon
-    private final double[] dropoffLocation = new double[]{0.0, 0.0};
-    private VehicleType selectedVehicleType = null; // 初始不選擇
     private Order currentOrder;
     private Timeline pollingTimeline;
     
-    // UI 元件引用
-    private StackPane loginView;
-    private StackPane mainView;
-    private VBox bottomSheet;
-    private TextField pickupInput;
-    private TextField dropoffInput;
-    private Label estimatedFareLabel;
-    private Button confirmLocationBtn;
-    private VBox vehicleSelectionBox;
-    private Button requestRideBtn;
+    // UI Components
+    private VBox homeView;
+    private VBox orderView;
     
-    // 模擬地址
-    private String pickupAddress = "正在獲取位置...";
-    private String dropoffAddress = "";
-
+    // Home View Components
+    private TextField pickupXField;
+    private TextField pickupYField;
+    private TextField dropoffXField;
+    private TextField dropoffYField;
+    private ComboBox<VehicleType> vehicleTypeCombo;
+    private Label estimatedFareLabel;
+    private Button createOrderBtn;
+    
+    // Order View Components
+    private Label orderStatusLabel;
+    private Label driverInfoLabel;
+    private Label pickupLabel;
+    private Label dropoffLabel;
+    private Label fareLabel;
+    private VBox tripProgressBox;
+    private Button cancelBtn;
+    
     public MainController() {
         this.apiClient = new ApiClient();
-        this.root = new StackPane();
-        this.root.setStyle("-fx-background-color: " + Theme.BG_BLACK + ";");
+        this.passengerId = "passenger-" + System.currentTimeMillis() % 1000;
+        this.root = new BorderPane();
         
-        initLoginView();
-        // 初始只顯示登入頁面
-        root.getChildren().add(loginView);
+        initUI();
+        showHomeView();
     }
     
-    public StackPane getRoot() { return root; }
-    
-    public void shutdown() {
-        if (pollingTimeline != null) pollingTimeline.stop();
+    public BorderPane getRoot() {
+        return root;
     }
     
-    // ==========================================
-    // 1. 登入視圖
-    // ==========================================
-    
-    private void initLoginView() {
-        loginView = new StackPane();
-        loginView.setStyle("-fx-background-color: Black;");
-        
-        VBox content = new VBox(30);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(40));
-        
-        Label logo = new Label("Uber");
-        logo.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 48));
-        logo.setTextFill(Color.WHITE);
-        
-        VBox inputGroup = new VBox(10);
-        Label phoneLabel = new Label("輸入您的手機號碼以繼續");
-        phoneLabel.setTextFill(Color.WHITE);
-        phoneLabel.setFont(Font.font("Microsoft JhengHei", 16));
-        
-        TextField phoneField = new TextField();
-        phoneField.setPromptText("0912-345-678");
-        phoneField.setStyle("""
-            -fx-background-color: #2A2A2A;
-            -fx-text-fill: white;
-            -fx-font-size: 18px;
-            -fx-padding: 15;
-            -fx-background-radius: 8;
-        """);
-        
-        Button loginBtn = new Button("繼續");
-        loginBtn.setStyle(Theme.getPrimaryButtonStyle());
-        loginBtn.setMaxWidth(Double.MAX_VALUE);
-        loginBtn.setOnAction(e -> {
-            if (!phoneField.getText().isEmpty()) {
-                performLogin(phoneField.getText());
-            }
-        });
-        
-        inputGroup.getChildren().addAll(phoneLabel, phoneField);
-        content.getChildren().addAll(logo, inputGroup, loginBtn);
-        
-        loginView.getChildren().add(content);
+    private void initUI() {
+        root.setStyle("-fx-background-color: " + Theme.BG_DARK + ";");
+        createHomeView();
+        createOrderView();
     }
     
-    private void performLogin(String phone) {
-        // 模擬登入 (未來可接後端 API)
-        this.passengerId = "passenger-" + phone;
+    private void createHomeView() {
+        homeView = new VBox(20);
+        homeView.setPadding(new Insets(30));
+        homeView.setAlignment(Pos.TOP_CENTER);
         
-        // 切換到主畫面
-        initMainView();
-        root.getChildren().clear();
-        root.getChildren().add(mainView);
-    }
-    
-    // ==========================================
-    // 2. 主視圖 (地圖 + UI)
-    // ==========================================
-    
-    private void initMainView() {
-        mainView = new StackPane();
+        // Header
+        Label titleLabel = new Label("🚕 叫車服務");
+        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
+        titleLabel.setTextFill(Color.WHITE);
         
-        // 1. 底層地圖
-        map = new SimulatedMap();
+        Label subtitleLabel = new Label("隨時隨地，安全出行");
+        subtitleLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        subtitleLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
         
-        // 監聽地圖移動，更新地址顯示
-        // SimulatedMap: CenterX=Lon, CenterY=Lat
-        map.centerXProperty().addListener((obs, old, val) -> updateAddressFromMap());
-        map.centerYProperty().addListener((obs, old, val) -> updateAddressFromMap());
+        VBox headerBox = new VBox(8, titleLabel, subtitleLabel);
+        headerBox.setAlignment(Pos.CENTER);
         
-        // 點擊地圖選擇地點
-        map.setOnMapClickListener(point -> {
-            if (isInLocationSelectionMode) {
-                // point is (Lon, Lat) from SimulatedMap
-                map.setCenter(point.getX(), point.getY());
-            }
-        });
+        // 上車地點
+        VBox pickupCard = createLocationCard("📍 上車地點", true);
         
-        // 設定初始位置 (Lon, Lat) -> Swap from [Lat, Lon]
-        map.setCenter(pickupLocation[1], pickupLocation[0]);
-        updateAddressFromMap(); // 初始更新一次地址
+        // 下車地點
+        VBox dropoffCard = createLocationCard("🎯 下車地點", false);
         
-        // 2. 地圖中心標記 (大頭針)
-        Label pin = new Label("📍");
-        pin.setFont(Font.font(48));
-        pin.setPickOnBounds(false); // 讓點擊穿透到地圖
-        pin.setTranslateY(-24); // 讓針尖對準中心
+        // 車種選擇
+        VBox vehicleCard = createVehicleCard();
         
-        // 3. UI 層
-        BorderPane uiLayer = new BorderPane();
-        uiLayer.setPickOnBounds(false); // 讓空白處點擊穿透到地圖
+        // 預估車資
+        VBox fareCard = new VBox(10);
+        fareCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        fareCard.setPadding(new Insets(20));
         
-        // 頂部導航
-        HBox navbar = createNavbar();
-        uiLayer.setTop(navbar);
+        Label fareTitle = new Label("💰 預估車資");
+        fareTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        fareTitle.setTextFill(Color.WHITE);
         
-        // 底部面板
-        bottomSheet = createBottomSheet();
-        uiLayer.setBottom(bottomSheet);
+        estimatedFareLabel = new Label("--");
+        estimatedFareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 32));
+        estimatedFareLabel.setTextFill(Color.web(Theme.SUCCESS));
         
-        // 4. "確認位置" 按鈕 (僅在選點模式顯示)
-        confirmLocationBtn = new Button("確認位置");
-        confirmLocationBtn.setStyle(Theme.getPrimaryButtonStyle());
-        confirmLocationBtn.setMaxWidth(200);
-        confirmLocationBtn.setVisible(false);
-        confirmLocationBtn.setOnAction(e -> confirmLocationSelection());
-        
-        StackPane.setAlignment(confirmLocationBtn, Pos.BOTTOM_CENTER);
-        StackPane.setMargin(confirmLocationBtn, new Insets(0, 0, 100, 0));
-        
-        mainView.getChildren().addAll(map, pin, uiLayer, confirmLocationBtn);
-    }
-    
-    private HBox createNavbar() {
-        HBox navbar = new HBox();
-        navbar.setPadding(new Insets(15, 20, 15, 20));
-        
-        Button menuBtn = new Button("☰");
-        menuBtn.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-min-width: 40; -fx-min-height: 40; -fx-font-size: 18; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 2);");
-        
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        
-        Label logo = new Label("Uber");
-        logo.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 20));
-        logo.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 2, 0, 0, 1);");
-        logo.setTextFill(Color.WHITE);
-        
-        navbar.getChildren().addAll(menuBtn, spacer, logo);
-        return navbar;
-    }
-    
-    private VBox createBottomSheet() {
-        VBox sheet = new VBox(15);
-        sheet.setPadding(new Insets(20));
-        sheet.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, -5);");
-        sheet.setMaxHeight(400);
-        
-        // 裝飾性把手
-        Region handle = new Region();
-        handle.setMinSize(40, 4);
-        handle.setMaxSize(40, 4);
-        handle.setStyle("-fx-background-color: #444; -fx-background-radius: 2;");
-        StackPane handleContainer = new StackPane(handle);
-        handleContainer.setPadding(new Insets(0, 0, 10, 0));
-        
-        // 上車/下車 輸入框容器
-        VBox locationBox = new VBox(10);
-        
-        // 上車點
-        HBox pickupRow = new HBox(10);
-        pickupRow.setAlignment(Pos.CENTER_LEFT);
-        Circle pickupDot = new Circle(4, Color.web(Theme.UBER_GREEN));
-        pickupInput = new TextField();
-        pickupInput.setPromptText("設定上車地點");
-        pickupInput.setText(pickupAddress);
-        pickupInput.setEditable(false); // 只能通過地圖選擇
-        pickupInput.setStyle(getInputStyle());
-        HBox.setHgrow(pickupInput, Priority.ALWAYS);
-        // 點擊進入選點模式
-        pickupInput.setOnMouseClicked(e -> startLocationSelection(true));
-        pickupRow.getChildren().addAll(pickupDot, pickupInput);
-        
-        // 連接線
-        Line connector = new Line(0, 0, 0, 10);
-        connector.setStroke(Color.GRAY);
-        connector.setStrokeWidth(1);
-        VBox connectorBox = new VBox(connector);
-        connectorBox.setPadding(new Insets(0, 0, 0, 4));
-        
-        // 下車點
-        HBox dropoffRow = new HBox(10);
-        dropoffRow.setAlignment(Pos.CENTER_LEFT);
-        Circle dropoffDot = new Circle(4, Color.WHITE); // 方塊用圓形代替
-        dropoffInput = new TextField();
-        dropoffInput.setPromptText("去哪裡？");
-        dropoffInput.setStyle(getInputStyle());
-        dropoffInput.setEditable(false);
-        HBox.setHgrow(dropoffInput, Priority.ALWAYS);
-        dropoffInput.setOnMouseClicked(e -> startLocationSelection(false));
-        dropoffRow.getChildren().addAll(dropoffDot, dropoffInput);
-        
-        locationBox.getChildren().addAll(pickupRow, dropoffRow);
-        
-        // 車種選擇 (隱藏直到選好地點)
-        vehicleSelectionBox = createVehicleSelection();
-        vehicleSelectionBox.setVisible(false);
-        vehicleSelectionBox.setManaged(false);
+        fareCard.getChildren().addAll(fareTitle, estimatedFareLabel);
+        fareCard.setAlignment(Pos.CENTER);
         
         // 叫車按鈕
-        requestRideBtn = new Button("確認叫車");
-        requestRideBtn.setStyle(Theme.getPrimaryButtonStyle());
-        requestRideBtn.setMaxWidth(Double.MAX_VALUE);
-        requestRideBtn.setVisible(false);
-        requestRideBtn.setManaged(false);
-        requestRideBtn.setDisable(true); // 初始禁用，直到選擇車種
-        requestRideBtn.setOnAction(e -> requestRide());
+        createOrderBtn = new Button("🚗 立即叫車");
+        createOrderBtn.setMaxWidth(Double.MAX_VALUE);
+        createOrderBtn.setStyle("""
+            -fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00);
+            -fx-text-fill: white;
+            -fx-font-size: 18px;
+            -fx-font-weight: bold;
+            -fx-padding: 16 32;
+            -fx-background-radius: 12;
+            -fx-cursor: hand;
+            """);
+        createOrderBtn.setOnAction(e -> createOrder());
         
-        sheet.getChildren().addAll(handleContainer, locationBox, vehicleSelectionBox, requestRideBtn);
-        return sheet;
+        // 輸入變更時計算預估車資
+        pickupXField.textProperty().addListener((o, old, n) -> calculateEstimate());
+        pickupYField.textProperty().addListener((o, old, n) -> calculateEstimate());
+        dropoffXField.textProperty().addListener((o, old, n) -> calculateEstimate());
+        dropoffYField.textProperty().addListener((o, old, n) -> calculateEstimate());
+        vehicleTypeCombo.valueProperty().addListener((o, old, n) -> calculateEstimate());
+        
+        homeView.getChildren().addAll(headerBox, pickupCard, dropoffCard, vehicleCard, fareCard, createOrderBtn);
     }
     
-    private VBox createVehicleSelection() {
-        VBox box = new VBox(15);
+    private VBox createLocationCard(String title, boolean isPickup) {
+        VBox card = new VBox(12);
+        card.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        card.setPadding(new Insets(20));
         
-        Label title = new Label("選擇車種");
-        title.setTextFill(Color.WHITE);
-        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        titleLabel.setTextFill(Color.WHITE);
         
-        HBox types = new HBox(10);
-        types.setAlignment(Pos.CENTER);
+        HBox coordBox = new HBox(12);
+        coordBox.setAlignment(Pos.CENTER_LEFT);
         
-        VBox standard = createVehicleCard("🚗", "菁英", VehicleType.STANDARD);
-        VBox premium = createVehicleCard("🚘", "尊榮", VehicleType.PREMIUM);
-        VBox xl = createVehicleCard("🚐", "大型", VehicleType.XL);
+        Label xLabel = new Label("X:");
+        xLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        xLabel.setFont(Font.font("Microsoft JhengHei", 14));
         
-        types.getChildren().addAll(standard, premium, xl);
+        TextField xField = new TextField();
+        xField.setPromptText("0-100");
+        xField.setPrefWidth(100);
+        xField.setStyle("""
+            -fx-background-color: #2A2A2A;
+            -fx-text-fill: white;
+            -fx-border-color: #444444;
+            -fx-border-radius: 8;
+            -fx-background-radius: 8;
+            -fx-padding: 10;
+            """);
         
-        estimatedFareLabel = new Label("預估金額: $--");
-        estimatedFareLabel.setTextFill(Color.web(Theme.UBER_GREEN));
-        estimatedFareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 18));
-        estimatedFareLabel.setAlignment(Pos.CENTER);
-        estimatedFareLabel.setMaxWidth(Double.MAX_VALUE);
+        Label yLabel = new Label("Y:");
+        yLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        yLabel.setFont(Font.font("Microsoft JhengHei", 14));
         
-        box.getChildren().addAll(title, types, estimatedFareLabel);
-        return box;
-    }
-    
-    private VBox createVehicleCard(String emoji, String name, VehicleType type) {
-        VBox card = new VBox(5);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(10));
-        card.setMinWidth(80);
-        card.setStyle("-fx-background-color: #333; -fx-background-radius: 8; -fx-cursor: hand;");
+        TextField yField = new TextField();
+        yField.setPromptText("0-100");
+        yField.setPrefWidth(100);
+        yField.setStyle(xField.getStyle());
         
-        Label icon = new Label(emoji);
-        icon.setFont(Font.font(24));
-        Label typeName = new Label(name);
-        typeName.setTextFill(Color.WHITE);
+        if (isPickup) {
+            pickupXField = xField;
+            pickupYField = yField;
+            // 預設值
+            pickupXField.setText("20");
+            pickupYField.setText("30");
+        } else {
+            dropoffXField = xField;
+            dropoffYField = yField;
+            // 預設值
+            dropoffXField.setText("60");
+            dropoffYField.setText("80");
+        }
         
-        card.getChildren().addAll(icon, typeName);
-        
-        // 點擊事件
-        card.setOnMouseClicked(e -> {
-            selectedVehicleType = type;
-            calculateEstimate();
-            requestRideBtn.setDisable(false); // 選擇車種後啟用叫車按鈕
-            
-            // 簡單的高亮效果
-            card.setStyle("-fx-background-color: #444; -fx-border-color: " + Theme.UBER_GREEN + "; -fx-border-radius: 8; -fx-background-radius: 8;");
-            // 重置其他卡片樣式
-            ((HBox)card.getParent()).getChildren().forEach(node -> {
-                if (node != card) node.setStyle("-fx-background-color: #333; -fx-background-radius: 8; -fx-cursor: hand;");
-            });
-        });
+        coordBox.getChildren().addAll(xLabel, xField, yLabel, yField);
+        card.getChildren().addAll(titleLabel, coordBox);
         
         return card;
     }
     
-    private String getInputStyle() {
-        return "-fx-background-color: #333; -fx-text-fill: white; -fx-padding: 10; -fx-background-radius: 5;";
+    private VBox createVehicleCard() {
+        VBox card = new VBox(12);
+        card.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        card.setPadding(new Insets(20));
+        
+        Label titleLabel = new Label("🚙 選擇車種");
+        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        titleLabel.setTextFill(Color.WHITE);
+        
+        vehicleTypeCombo = new ComboBox<>();
+        vehicleTypeCombo.getItems().addAll(VehicleType.values());
+        vehicleTypeCombo.setValue(VehicleType.STANDARD);
+        vehicleTypeCombo.setMaxWidth(Double.MAX_VALUE);
+        vehicleTypeCombo.setStyle("""
+            -fx-background-color: #2A2A2A;
+            -fx-border-color: #444444;
+            -fx-border-radius: 8;
+            -fx-background-radius: 8;
+            -fx-padding: 8;
+            """);
+        
+        // 車種說明
+        HBox vehicleInfo = new HBox(20);
+        vehicleInfo.setAlignment(Pos.CENTER);
+        vehicleInfo.setPadding(new Insets(10, 0, 0, 0));
+        
+        vehicleInfo.getChildren().addAll(
+            createVehicleOption("🚗", "標準", "$15/km"),
+            createVehicleOption("🚘", "尊榮", "$25/km"),
+            createVehicleOption("🚐", "大型", "$30/km")
+        );
+        
+        card.getChildren().addAll(titleLabel, vehicleTypeCombo, vehicleInfo);
+        
+        return card;
     }
     
-    // ==========================================
-    // 3. 邏輯處理
-    // ==========================================
-    
-    // 進入選點模式
-    private void startLocationSelection(boolean isPickup) {
-        isSelectingPickup = isPickup;
-        isInLocationSelectionMode = true;
+    private VBox createVehicleOption(String emoji, String name, String price) {
+        VBox box = new VBox(4);
+        box.setAlignment(Pos.CENTER);
         
-        // 隱藏 Bottom Sheet (移出螢幕)
-        TranslateTransition tt = new TranslateTransition(Duration.millis(300), bottomSheet);
-        tt.setToY(400); // 往下移
-        tt.play();
+        Label emojiLabel = new Label(emoji);
+        emojiLabel.setFont(Font.font(24));
         
-        // 顯示確認按鈕
-        confirmLocationBtn.setVisible(true);
-        confirmLocationBtn.setText(isPickup ? "確認上車地點" : "確認下車地點");
+        Label nameLabel = new Label(name);
+        nameLabel.setTextFill(Color.WHITE);
+        nameLabel.setFont(Font.font("Microsoft JhengHei", 12));
         
-        // 移動地圖到上次選擇的位置
-        double[] target = isPickup ? pickupLocation : dropoffLocation;
-        if (target[0] != 0 || target[1] != 0) {
-            // target is [Lat, Lon], map needs (Lon, Lat)
-            map.setCenter(target[1], target[0]);
-        }
+        Label priceLabel = new Label(price);
+        priceLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        priceLabel.setFont(Font.font("Microsoft JhengHei", 10));
         
-        updateAddressFromMap();
+        box.getChildren().addAll(emojiLabel, nameLabel, priceLabel);
+        return box;
     }
     
-    // 確認選點
-    private void confirmLocationSelection() {
-        isInLocationSelectionMode = false;
+    private void createOrderView() {
+        orderView = new VBox(20);
+        orderView.setPadding(new Insets(30));
+        orderView.setAlignment(Pos.TOP_CENTER);
         
-        // Map CenterX=Lon, CenterY=Lat
-        double currentLon = map.getCenterX();
-        double currentLat = map.getCenterY();
+        // Header
+        Label titleLabel = new Label("📋 訂單詳情");
+        titleLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
+        titleLabel.setTextFill(Color.WHITE);
         
-        // 保存座標
-        if (isSelectingPickup) {
-            pickupLocation[0] = currentLat;
-            pickupLocation[1] = currentLon;
-            pickupAddress = generateAddress(currentLat, currentLon);
-            pickupInput.setText(pickupAddress);
-            
-            // 如果下車點還沒設，提示設置下車點? 
-            // 這裡不自動跳轉，讓用戶自己決定
-        } else {
-            dropoffLocation[0] = currentLat;
-            dropoffLocation[1] = currentLon;
-            dropoffAddress = generateAddress(currentLat, currentLon);
-            dropoffInput.setText(dropoffAddress);
-        }
+        // 狀態卡片
+        VBox statusCard = new VBox(12);
+        statusCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        statusCard.setPadding(new Insets(20));
+        statusCard.setAlignment(Pos.CENTER);
         
-        // 顯示 Bottom Sheet
-        TranslateTransition tt = new TranslateTransition(Duration.millis(300), bottomSheet);
-        tt.setToY(0);
-        tt.play();
+        Label statusTitle = new Label("訂單狀態");
+        statusTitle.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        statusTitle.setFont(Font.font("Microsoft JhengHei", 14));
         
-        confirmLocationBtn.setVisible(false);
+        orderStatusLabel = new Label("等待中...");
+        orderStatusLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 24));
+        orderStatusLabel.setTextFill(Color.web(Theme.WARNING));
         
-        // 如果兩點都設好了，顯示車種選單
-        // 注意：dropoffLocation 初始為 0,0，所以檢查是否非 0
-        if (dropoffLocation[0] != 0) {
-            vehicleSelectionBox.setVisible(true);
-            vehicleSelectionBox.setManaged(true);
-            requestRideBtn.setVisible(true);
-            requestRideBtn.setManaged(true);
-            
-            // 如果已選車種，重新計算
-            if (selectedVehicleType != null) {
-                calculateEstimate();
-            }
-        }
+        statusCard.getChildren().addAll(statusTitle, orderStatusLabel);
+        
+        // 行程進度
+        tripProgressBox = new VBox(8);
+        tripProgressBox.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        tripProgressBox.setPadding(new Insets(20));
+        createTripProgress();
+        
+        // 司機資訊
+        VBox driverCard = new VBox(12);
+        driverCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        driverCard.setPadding(new Insets(20));
+        
+        Label driverTitle = new Label("🚗 司機資訊");
+        driverTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        driverTitle.setTextFill(Color.WHITE);
+        
+        driverInfoLabel = new Label("等待司機接單...");
+        driverInfoLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        driverInfoLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        driverInfoLabel.setWrapText(true);
+        
+        driverCard.getChildren().addAll(driverTitle, driverInfoLabel);
+        
+        // 路線資訊
+        VBox routeCard = new VBox(12);
+        routeCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        routeCard.setPadding(new Insets(20));
+        
+        Label routeTitle = new Label("📍 路線資訊");
+        routeTitle.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        routeTitle.setTextFill(Color.WHITE);
+        
+        pickupLabel = new Label("上車: --");
+        pickupLabel.setTextFill(Color.web(Theme.SUCCESS));
+        pickupLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        
+        dropoffLabel = new Label("下車: --");
+        dropoffLabel.setTextFill(Color.web(Theme.ERROR));
+        dropoffLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        
+        routeCard.getChildren().addAll(routeTitle, pickupLabel, dropoffLabel);
+        
+        // 車資資訊
+        VBox fareCard = new VBox(12);
+        fareCard.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 12;");
+        fareCard.setPadding(new Insets(20));
+        fareCard.setAlignment(Pos.CENTER);
+        
+        Label fareTitleLabel = new Label("💰 車資");
+        fareTitleLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
+        fareTitleLabel.setFont(Font.font("Microsoft JhengHei", 14));
+        
+        fareLabel = new Label("--");
+        fareLabel.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 28));
+        fareLabel.setTextFill(Color.web(Theme.SUCCESS));
+        
+        fareCard.getChildren().addAll(fareTitleLabel, fareLabel);
+        
+        // 取消按鈕
+        cancelBtn = new Button("❌ 取消訂單");
+        cancelBtn.setMaxWidth(Double.MAX_VALUE);
+        cancelBtn.setStyle("""
+            -fx-background-color: linear-gradient(to bottom, #F44336, #D32F2F);
+            -fx-text-fill: white;
+            -fx-font-size: 16px;
+            -fx-font-weight: bold;
+            -fx-padding: 14 28;
+            -fx-background-radius: 12;
+            -fx-cursor: hand;
+            """);
+        cancelBtn.setOnAction(e -> cancelOrder());
+        
+        // 返回首頁按鈕（完成或取消後顯示）
+        Button backBtn = new Button("🏠 返回首頁");
+        backBtn.setMaxWidth(Double.MAX_VALUE);
+        backBtn.setVisible(false);
+        backBtn.setManaged(false);
+        backBtn.setStyle("""
+            -fx-background-color: #2A2A2A;
+            -fx-border-color: #1976D2;
+            -fx-border-width: 2;
+            -fx-text-fill: white;
+            -fx-font-size: 16px;
+            -fx-font-weight: bold;
+            -fx-padding: 14 28;
+            -fx-background-radius: 12;
+            -fx-cursor: hand;
+            """);
+        backBtn.setOnAction(e -> {
+            currentOrder = null;
+            showHomeView();
+        });
+        
+        orderView.getChildren().addAll(
+            titleLabel, statusCard, tripProgressBox, 
+            driverCard, routeCard, fareCard, 
+            cancelBtn, backBtn
+        );
     }
     
-    private void updateAddressFromMap() {
-        // 即時更新地址顯示 (僅在內部狀態記錄，或顯示在 Pin 上方?)
-        // 這裡為了效能，主要在 Model 中更新，實際 UI 文字框在 confirm 時更新
-        // 但為了 "所見即所得"，我們可以把當前 Pin 下方的地址顯示給用戶看 (例如 Toast 或 漂浮 Label)
-        // 簡化：直接更新 address 變數，如果不 confirm 就不寫入 Input
+    private void createTripProgress() {
+        tripProgressBox.getChildren().clear();
         
-        // 實際應用: 應該有一個 "Selected Address" Label 在 Pin 上方
-        // 這裡我們暫時只更新變數，confirm 時才顯示到 TextField
-        // Map: X=Lon, Y=Lat
-        double lon = map.getCenterX();
-        double lat = map.getCenterY();
-        // generateAddress takes (Lat, Lon)
-        String tempAddr = generateAddress(lat, lon);
+        Label title = new Label("🚀 行程進度");
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        title.setTextFill(Color.WHITE);
         
-        // Update global var but not text field yet
+        HBox progressRow = new HBox(8);
+        progressRow.setAlignment(Pos.CENTER);
+        
+        progressRow.getChildren().addAll(
+            createProgressStep("建立", true),
+            createProgressLine(false),
+            createProgressStep("接單", false),
+            createProgressLine(false),
+            createProgressStep("行駛", false),
+            createProgressLine(false),
+            createProgressStep("完成", false)
+        );
+        
+        tripProgressBox.getChildren().addAll(title, progressRow);
     }
     
-    private String generateAddress(double lat, double lon) {
-        // 生成台中的地址
-        // 中心 24.1618, 120.6469 (市府)
+    private VBox createProgressStep(String label, boolean active) {
+        VBox box = new VBox(4);
+        box.setAlignment(Pos.CENTER);
         
-        double dLat = (lat - 24.1618) * 10000; // 緯度差 (約每 0.0001 度 11 公尺)
-        double dLon = (lon - 120.6469) * 10000; // 經度差 (約每 0.0001 度 9 公尺)
+        Circle circle = new Circle(12);
+        circle.setFill(active ? Color.web(Theme.PRIMARY) : Color.web("#444444"));
+        circle.setStroke(active ? Color.web(Theme.PRIMARY_LIGHT) : Color.web("#666666"));
+        circle.setStrokeWidth(2);
         
-        String district = "西屯區";
-        String road = "台灣大道";
+        Label text = new Label(label);
+        text.setTextFill(active ? Color.WHITE : Color.web(Theme.TEXT_SECONDARY));
+        text.setFont(Font.font("Microsoft JhengHei", 11));
         
-        // 根據經緯度大致判斷行政區
-        if (dLat > 15) { // 北邊
-            if (dLon > 10) district = "北屯區";
-            else if (dLon < -10) district = "西區";
-            else district = "北區";
-        } else if (dLat < -15) { // 南邊
-            if (dLon > 10) district = "大里區";
-            else if (dLon < -10) district = "南屯區";
-            else district = "南區";
-        } else { // 中間
-            if (dLon > 15) district = "東區";
-            else if (dLon < -15) district = "龍井區";
-            else district = "中區"; // 市中心附近
-        }
+        box.getChildren().addAll(circle, text);
+        return box;
+    }
+    
+    private Region createProgressLine(boolean active) {
+        Region line = new Region();
+        line.setPrefWidth(30);
+        line.setPrefHeight(3);
+        line.setStyle("-fx-background-color: " + (active ? Theme.PRIMARY : "#444444") + ";");
+        return line;
+    }
+    
+    private void updateTripProgress(OrderStatus status) {
+        tripProgressBox.getChildren().clear();
         
-        // 根據經緯度大致判斷路名
-        if (Math.abs(dLat) < 5 && Math.abs(dLon) < 5) {
-            road = "惠中路";
-        } else if (Math.abs(dLat) > 10 && Math.abs(dLon) < 10) {
-            road = "文心路";
-        } else if (Math.abs(dLon) > 10 && Math.abs(dLat) < 10) {
-            road = "公益路";
-        } else if (Math.abs(dLat) > 20 || Math.abs(dLon) > 20) {
-            road = "環中路";
-        }
+        Label title = new Label("🚀 行程進度");
+        title.setFont(Font.font("Microsoft JhengHei", FontWeight.BOLD, 16));
+        title.setTextFill(Color.WHITE);
         
-        int sec = (int) (Math.abs(dLon) / 5) + 1;
-        int no = (int) (Math.abs(dLat) * 2 + Math.abs(dLon) * 1.5) % 800 + 1;
+        HBox progressRow = new HBox(8);
+        progressRow.setAlignment(Pos.CENTER);
         
-        return String.format("台中市%s%s%d段%d號", district, road, sec, no);
+        int step = switch (status) {
+            case PENDING -> 1;
+            case ACCEPTED -> 2;
+            case ONGOING -> 3;
+            case COMPLETED -> 4;
+            case CANCELLED -> 0;
+        };
+        
+        progressRow.getChildren().addAll(
+            createProgressStep("建立", step >= 1),
+            createProgressLine(step >= 2),
+            createProgressStep("接單", step >= 2),
+            createProgressLine(step >= 3),
+            createProgressStep("行駛", step >= 3),
+            createProgressLine(step >= 4),
+            createProgressStep("完成", step >= 4)
+        );
+        
+        tripProgressBox.getChildren().addAll(title, progressRow);
+    }
+    
+    private void showHomeView() {
+        stopPolling();
+        root.setCenter(homeView);
+    }
+    
+    private void showOrderView() {
+        root.setCenter(orderView);
+        startPolling();
     }
     
     private void calculateEstimate() {
-        if (selectedVehicleType == null) return;
-        
-        // 簡單距離計算 (歐幾里得距離估算，非真實路徑)
-        // 1 度經緯度 approx 111km. 
-        double latDiff = pickupLocation[0] - dropoffLocation[0];
-        double lonDiff = pickupLocation[1] - dropoffLocation[1];
-        double distDeg = Math.sqrt(latDiff*latDiff + lonDiff*lonDiff);
-        double distKm = distDeg * 111.0;
-        
-        double base = switch(selectedVehicleType) {
-            case STANDARD -> 50;
-            case PREMIUM -> 100;
-            case XL -> 150;
-        };
-        double perKm = switch(selectedVehicleType) {
-            case STANDARD -> 20;
-            case PREMIUM -> 35;
-            case XL -> 45;
-        };
-        
-        double fare = base + distKm * perKm;
-        estimatedFareLabel.setText(String.format("預估金額: $%.0f", fare));
+        try {
+            double pickupX = Double.parseDouble(pickupXField.getText());
+            double pickupY = Double.parseDouble(pickupYField.getText());
+            double dropoffX = Double.parseDouble(dropoffXField.getText());
+            double dropoffY = Double.parseDouble(dropoffYField.getText());
+            
+            double distance = Math.sqrt(Math.pow(dropoffX - pickupX, 2) + Math.pow(dropoffY - pickupY, 2));
+            VehicleType type = vehicleTypeCombo.getValue();
+            
+            double baseFare = switch (type) {
+                case STANDARD -> 50;
+                case PREMIUM -> 80;
+                case XL -> 100;
+            };
+            
+            double perKm = switch (type) {
+                case STANDARD -> 15;
+                case PREMIUM -> 25;
+                case XL -> 30;
+            };
+            
+            double minFare = switch (type) {
+                case STANDARD -> 70;
+                case PREMIUM -> 120;
+                case XL -> 150;
+            };
+            
+            double fare = Math.max(baseFare + distance * perKm, minFare);
+            estimatedFareLabel.setText(String.format("$%.0f", fare));
+            
+        } catch (NumberFormatException e) {
+            estimatedFareLabel.setText("--");
+        }
     }
     
-    private void requestRide() {
-        if (selectedVehicleType == null) {
-            new Alert(Alert.AlertType.WARNING, "請選擇車種").show();
-            return;
+    private void createOrder() {
+        try {
+            double pickupX = Double.parseDouble(pickupXField.getText());
+            double pickupY = Double.parseDouble(pickupYField.getText());
+            double dropoffX = Double.parseDouble(dropoffXField.getText());
+            double dropoffY = Double.parseDouble(dropoffYField.getText());
+            
+            // 驗證座標
+            if (pickupX < 0 || pickupX > 100 || pickupY < 0 || pickupY > 100 ||
+                dropoffX < 0 || dropoffX > 100 || dropoffY < 0 || dropoffY > 100) {
+                UIUtils.showError("錯誤", "座標必須在 0-100 範圍內");
+                return;
+            }
+            
+            if (pickupX == dropoffX && pickupY == dropoffY) {
+                UIUtils.showError("錯誤", "上車地點和下車地點不可相同");
+                return;
+            }
+            
+            Location pickup = new Location(pickupX, pickupY);
+            Location dropoff = new Location(dropoffX, dropoffY);
+            VehicleType vehicleType = vehicleTypeCombo.getValue();
+            
+            createOrderBtn.setDisable(true);
+            createOrderBtn.setText("建立中...");
+            
+            apiClient.createOrder(passengerId, pickup, dropoff, vehicleType)
+                .whenComplete((response, error) -> {
+                    Platform.runLater(() -> {
+                        createOrderBtn.setDisable(false);
+                        createOrderBtn.setText("🚗 立即叫車");
+                        
+                        if (error != null) {
+                            UIUtils.showError("連線錯誤", "無法連接伺服器: " + error.getMessage());
+                            return;
+                        }
+                        
+                        if (response.isSuccess()) {
+                            currentOrder = response.getData();
+                            updateOrderView();
+                            showOrderView();
+                        } else {
+                            UIUtils.showError("建立失敗", response.getErrorMessage());
+                        }
+                    });
+                });
+                
+        } catch (NumberFormatException e) {
+            UIUtils.showError("錯誤", "請輸入有效的座標數值");
+        }
+    }
+    
+    private void cancelOrder() {
+        if (currentOrder == null) return;
+        
+        UIUtils.showConfirm("確認取消", "確定要取消此訂單嗎？\n可能會產生取消費用。")
+            .thenAccept(confirmed -> {
+                if (confirmed) {
+                    cancelBtn.setDisable(true);
+                    
+                    apiClient.cancelOrder(currentOrder.getOrderId(), passengerId, "乘客取消")
+                        .whenComplete((response, error) -> {
+                            Platform.runLater(() -> {
+                                cancelBtn.setDisable(false);
+                                
+                                if (error != null) {
+                                    UIUtils.showError("連線錯誤", error.getMessage());
+                                    return;
+                                }
+                                
+                                if (response.isSuccess()) {
+                                    currentOrder = response.getData();
+                                    updateOrderView();
+                                    UIUtils.showInfo("已取消", "訂單已成功取消");
+                                } else {
+                                    UIUtils.showError("取消失敗", response.getErrorMessage());
+                                }
+                            });
+                        });
+                }
+            });
+    }
+    
+    private void updateOrderView() {
+        if (currentOrder == null) return;
+        
+        OrderStatus status = currentOrder.getStatus();
+        
+        // 更新狀態
+        orderStatusLabel.setText(status.getDisplayName());
+        orderStatusLabel.setTextFill(Color.web(status.getColor()));
+        
+        // 更新進度
+        updateTripProgress(status);
+        
+        // 更新司機資訊
+        if (currentOrder.getDriverId() != null) {
+            String driverInfo = String.format(
+                "司機: %s\n電話: %s\n車牌: %s",
+                currentOrder.getDriverName() != null ? currentOrder.getDriverName() : currentOrder.getDriverId(),
+                currentOrder.getDriverPhone() != null ? currentOrder.getDriverPhone() : "未知",
+                currentOrder.getVehiclePlate() != null ? currentOrder.getVehiclePlate() : "未知"
+            );
+            driverInfoLabel.setText(driverInfo);
+            driverInfoLabel.setTextFill(Color.WHITE);
+        } else {
+            driverInfoLabel.setText("等待司機接單...");
+            driverInfoLabel.setTextFill(Color.web(Theme.TEXT_SECONDARY));
         }
         
-        Location pLoc = new Location(pickupLocation[0], pickupLocation[1]);
-        pLoc.setAddress(pickupAddress);
+        // 更新路線
+        pickupLabel.setText("上車: " + currentOrder.getPickupLocation());
+        dropoffLabel.setText("下車: " + currentOrder.getDropoffLocation());
         
-        Location dLoc = new Location(dropoffLocation[0], dropoffLocation[1]);
-        dLoc.setAddress(dropoffAddress);
+        // 更新車資
+        Double fare = currentOrder.getActualFare() != null ? 
+            currentOrder.getActualFare() : currentOrder.getEstimatedFare();
+        fareLabel.setText(fare != null ? String.format("$%.0f", fare) : "--");
         
-        requestRideBtn.setDisable(true);
-        requestRideBtn.setText("正在呼叫司機...");
+        // 更新取消按鈕
+        boolean canCancel = status == OrderStatus.PENDING || status == OrderStatus.ACCEPTED;
+        cancelBtn.setVisible(canCancel);
+        cancelBtn.setManaged(canCancel);
         
-        apiClient.createOrder(passengerId, pLoc, dLoc, selectedVehicleType)
-            .whenComplete((res, err) -> {
+        // 完成或取消時顯示返回按鈕
+        boolean isFinished = status == OrderStatus.COMPLETED || status == OrderStatus.CANCELLED;
+        Button backBtn = (Button) orderView.getChildren().get(orderView.getChildren().size() - 1);
+        backBtn.setVisible(isFinished);
+        backBtn.setManaged(isFinished);
+        
+        if (isFinished) {
+            stopPolling();
+        }
+    }
+    
+    private void startPolling() {
+        if (pollingTimeline != null) {
+            pollingTimeline.stop();
+        }
+        
+        pollingTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> pollOrderStatus()));
+        pollingTimeline.setCycleCount(Timeline.INDEFINITE);
+        pollingTimeline.play();
+    }
+    
+    private void stopPolling() {
+        if (pollingTimeline != null) {
+            pollingTimeline.stop();
+            pollingTimeline = null;
+        }
+    }
+    
+    private void pollOrderStatus() {
+        if (currentOrder == null) return;
+        
+        apiClient.getOrder(currentOrder.getOrderId())
+            .whenComplete((response, error) -> {
                 Platform.runLater(() -> {
-                    if (err != null || !res.isSuccess()) {
-                        System.err.println("Order creation failed: " + (err != null ? err.getMessage() : res.getErrorMessage()));
-                        new Alert(Alert.AlertType.ERROR, "叫車失敗: " + (res != null ? res.getErrorMessage() : "網路錯誤")).show();
-                        requestRideBtn.setDisable(false);
-                        requestRideBtn.setText("確認叫車");
-                    } else {
-                        currentOrder = res.getData();
-                        showWaitingView();
+                    if (error == null && response.isSuccess()) {
+                        currentOrder = response.getData();
+                        updateOrderView();
                     }
                 });
             });
     }
     
-    private void showWaitingView() {
-        // 移除舊的等待畫面 (如果有)
-        if (root.lookup("#waitingBox") != null) {
-            return;
-        }
-
-        VBox waitingBox = new VBox(20);
-        waitingBox.setId("waitingBox");
-        waitingBox.setAlignment(Pos.CENTER);
-        // 改為底部浮層，保留地圖可見
-        waitingBox.setStyle("-fx-background-color: " + Theme.BG_CARD + "; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, -5);");
-        waitingBox.setMaxHeight(250);
-        waitingBox.setPadding(new Insets(30));
-        
-        Label status = new Label("正在為您尋找司機...");
-        status.setTextFill(Color.WHITE);
-        status.setFont(Font.font(20));
-        
-        ProgressIndicator pi = new ProgressIndicator();
-        pi.setStyle(" -fx-progress-color: " + Theme.UBER_GREEN + ";");
-        
-        Button cancelBtn = new Button("取消叫車");
-        cancelBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #aaa; -fx-font-size: 14;");
-        cancelBtn.setOnAction(e -> {
-            // TODO: Call cancel API
-            resetToMain();
-        });
-
-        waitingBox.getChildren().addAll(status, pi, cancelBtn);
-        
-        // 放置在底部，替換原本的 BottomSheet
-        mainView.getChildren().remove(bottomSheet);
-        StackPane.setAlignment(waitingBox, Pos.BOTTOM_CENTER);
-        mainView.getChildren().add(waitingBox);
-        
-        startPolling();
-    }
-    
-    private void resetToMain() {
-        if (pollingTimeline != null) pollingTimeline.stop();
-        mainView.getChildren().remove(mainView.lookup("#waitingBox"));
-        if (!mainView.getChildren().contains(bottomSheet)) {
-            mainView.getChildren().add(bottomSheet);
-        }
-        requestRideBtn.setDisable(false);
-        requestRideBtn.setText("確認叫車");
-        
-        // 清除司機圖標
-        Node driverIcon = map.lookup("#driverIcon");
-        if (driverIcon != null) map.getChildren().remove(driverIcon);
-    }
-    
-    private void startPolling() {
-        if (pollingTimeline != null) pollingTimeline.stop();
-        pollingTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            if (currentOrder != null) {
-                apiClient.getOrder(currentOrder.getOrderId()).whenComplete((res, err) -> {
-                    if (res != null && res.isSuccess()) {
-                        Platform.runLater(() -> checkOrderStatus(res.getData()));
-                    }
-                });
-            }
-        }));
-        pollingTimeline.setCycleCount(Timeline.INDEFINITE);
-        pollingTimeline.play();
-    }
-    
-    private void checkOrderStatus(Order order) {
-        currentOrder = order;
-        VBox waitingBox = (VBox) mainView.lookup("#waitingBox");
-        
-        if (order.getStatus() == OrderStatus.ACCEPTED || order.getStatus() == OrderStatus.ONGOING) {
-            if (waitingBox != null) {
-                Label statusLabel = (Label) waitingBox.getChildren().get(0);
-                statusLabel.setText(order.getStatus() == OrderStatus.ACCEPTED ? "司機正趕往您的位置" : "行程中");
-                statusLabel.setTextFill(Color.web(Theme.UBER_GREEN));
-                
-                // 隱藏進度條，顯示司機資訊
-                if (waitingBox.getChildren().size() > 1 && waitingBox.getChildren().get(1) instanceof ProgressIndicator) {
-                    waitingBox.getChildren().remove(1); // 移除 ProgressIndicator
-                    
-                    Label driverInfo = new Label("司機已接單"); // 這裡可以加司機名字
-                    driverInfo.setTextFill(Color.WHITE);
-                    waitingBox.getChildren().add(1, driverInfo);
-                }
-            }
-            
-            // 更新地圖上的司機位置
-            updateDriverLocationOnMap(order.getDriverId());
-        } else if (order.getStatus() == OrderStatus.COMPLETED) {
-            new Alert(Alert.AlertType.INFORMATION, "行程結束！").show();
-            resetToMain();
-        }
-    }
-
-    private void updateDriverLocationOnMap(String driverId) {
-        if (driverId == null) return;
-        
-        apiClient.getDriver(driverId).thenAccept(res -> {
-            if (res.isSuccess()) {
-                Platform.runLater(() -> {
-                    Driver driver = res.getData();
-                    Location loc = driver.getLocation();
-                    if (loc != null) {
-                        renderDriverIcon(loc.getX(), loc.getY());
-                    }
-                });
-            }
-        });
-    }
-
-    private void renderDriverIcon(double lat, double lon) {
-        Node icon = map.lookup("#driverIcon");
-        Label carLabel;
-        
-        if (icon == null) {
-            carLabel = new Label("🚖"); // 司機圖標
-            carLabel.setId("driverIcon");
-            carLabel.setFont(Font.font(30));
-            carLabel.setEffect(new javafx.scene.effect.DropShadow(5, Color.BLACK));
-            map.getChildren().add(carLabel);
-        } else {
-            carLabel = (Label) icon;
-        }
-        
-        // 轉換座標
-        double screenX = map.worldToScreenX(lat);
-        double screenY = map.worldToScreenY(lon);
-        
-        // 簡單平滑移動動畫
-        TranslateTransition tt = new TranslateTransition(Duration.millis(800), carLabel);
-        tt.setToX(screenX - 15); // 置中補償
-        tt.setToY(screenY - 15);
-        tt.play();
-        
-        // 確保圖標位置正確 (如果地圖拖動了，這裡其實需要綁定，但為求簡單先直接設定 Translate)
-        // 更好的做法是 bind LayoutX/Y 到 map 的轉換函數，但那太複雜。
-        // 這裡我們每次 polling 更新一次位置。
-        // 注意：因為 map 是 Pane，直接 setTranslate 相對於 Pane (0,0) 是 OK 的。
-        // 但如果地圖中心變了 (SimulatedMap 重繪)，圖標位置會跑掉。
-        // 我們需要在 SimulatedMap 的 draw() 或 centerX/Y 變更時也更新圖標。
-        // 暫時解法：限制乘客在等待時不要亂動地圖，或者在 checkOrderStatus 裡頻繁更新。
+    public void shutdown() {
+        stopPolling();
     }
 }

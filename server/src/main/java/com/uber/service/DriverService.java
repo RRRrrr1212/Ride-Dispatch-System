@@ -23,7 +23,6 @@ public class DriverService {
     
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
-    private final com.uber.repository.RiderRepository riderRepository;
     
     /**
      * 司機上線
@@ -37,15 +36,10 @@ public class DriverService {
                         .build());
         
         driver.setStatus(DriverStatus.ONLINE);
-        // 強制重置忙碌狀態，解決因異常流程導致狀態卡住的問題
-        driver.setBusy(false);
-        driver.setCurrentOrderId(null);
-        
         driver.setLocation(location);
         driver.setLastUpdatedAt(Instant.now());
         
         driverRepository.save(driver);
-        log.info("Driver {} is now online at ({}, {}) [State Reset]", driverId, location.getX(), location.getY());
         log.info("Driver {} is now online at ({}, {})", driverId, location.getX(), location.getY());
         return driver;
     }
@@ -109,23 +103,12 @@ public class DriverService {
         Location driverLocation = driver.getLocation();
         VehicleType driverVehicleType = driver.getVehicleType();
         
-        // 只返回最近的一筆訂單，避免司機一次看到多張單造成混淆
         return orderRepository.findByStatus(OrderStatus.PENDING).stream()
                 .filter(order -> order.getVehicleType() == driverVehicleType)
                 .sorted(Comparator
                         .comparingDouble((Order o) -> driverLocation.distanceTo(o.getPickupLocation()))
                         .thenComparing(Order::getOrderId))
-                .limit(1) // 一次只派一張單
-                .map(this::enrichOrder)
                 .collect(Collectors.toList());
-    }
-
-    private Order enrichOrder(Order order) {
-        if (order != null && order.getPassengerId() != null) {
-            riderRepository.findById(order.getPassengerId())
-                .ifPresent(rider -> order.setRiderName(rider.getName()));
-        }
-        return order;
     }
     
     /**

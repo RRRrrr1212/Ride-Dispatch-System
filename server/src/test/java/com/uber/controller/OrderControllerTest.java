@@ -10,12 +10,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -36,10 +35,10 @@ class OrderControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private OrderService orderService;
 
-    @MockBean
+    @MockitoBean
     private FareService fareService;
 
     private Order sampleOrder;
@@ -81,8 +80,10 @@ class OrderControllerTest {
 
             CreateOrderRequest request = new CreateOrderRequest();
             request.setPassengerId("passenger-001");
-            request.setPickupLocation(new Location(25.5, 30.2));
-            request.setDropoffLocation(new Location(45.8, 60.1));
+            request.setPickupX(25.5);
+            request.setPickupY(30.2);
+            request.setDropoffX(45.8);
+            request.setDropoffY(60.1);
             request.setVehicleType(VehicleType.STANDARD);
 
             mockMvc.perform(post("/api/orders")
@@ -122,6 +123,114 @@ class OrderControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.orderId").value("order-123"))
                     .andExpect(jsonPath("$.data.status").value("PENDING"));
+        }
+
+        @Test
+        @DisplayName("已接單訂單包含 driverId 和 acceptedAt")
+        void getOrder_AcceptedOrder() throws Exception {
+            Order acceptedOrder = Order.builder()
+                    .orderId("order-accepted")
+                    .passengerId("passenger-001")
+                    .driverId("driver-456")
+                    .status(OrderStatus.ACCEPTED)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(25.5, 30.2))
+                    .dropoffLocation(new Location(45.8, 60.1))
+                    .estimatedFare(150.00)
+                    .distance(8.5)
+                    .createdAt(Instant.now())
+                    .acceptedAt(Instant.now())
+                    .build();
+
+            when(orderService.getOrder("order-accepted")).thenReturn(acceptedOrder);
+
+            mockMvc.perform(get("/api/orders/order-accepted"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.driverId").value("driver-456"))
+                    .andExpect(jsonPath("$.data.acceptedAt").exists());
+        }
+
+        @Test
+        @DisplayName("進行中訂單包含 startedAt")
+        void getOrder_OngoingOrder() throws Exception {
+            Order ongoingOrder = Order.builder()
+                    .orderId("order-ongoing")
+                    .passengerId("passenger-001")
+                    .driverId("driver-456")
+                    .status(OrderStatus.ONGOING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(25.5, 30.2))
+                    .dropoffLocation(new Location(45.8, 60.1))
+                    .estimatedFare(150.00)
+                    .distance(8.5)
+                    .createdAt(Instant.now())
+                    .acceptedAt(Instant.now())
+                    .startedAt(Instant.now())
+                    .build();
+
+            when(orderService.getOrder("order-ongoing")).thenReturn(ongoingOrder);
+
+            mockMvc.perform(get("/api/orders/order-ongoing"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.startedAt").exists());
+        }
+
+        @Test
+        @DisplayName("已完成訂單包含完整資訊")
+        void getOrder_CompletedOrder() throws Exception {
+            Order completedOrder = Order.builder()
+                    .orderId("order-completed")
+                    .passengerId("passenger-001")
+                    .driverId("driver-456")
+                    .status(OrderStatus.COMPLETED)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(25.5, 30.2))
+                    .dropoffLocation(new Location(45.8, 60.1))
+                    .estimatedFare(150.00)
+                    .actualFare(185.50)
+                    .distance(8.5)
+                    .duration(15)
+                    .createdAt(Instant.now())
+                    .acceptedAt(Instant.now())
+                    .startedAt(Instant.now())
+                    .completedAt(Instant.now())
+                    .build();
+
+            when(orderService.getOrder("order-completed")).thenReturn(completedOrder);
+
+            mockMvc.perform(get("/api/orders/order-completed"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.completedAt").exists())
+                    .andExpect(jsonPath("$.data.fare").value(185.50))
+                    .andExpect(jsonPath("$.data.duration").value(15));
+        }
+
+        @Test
+        @DisplayName("已取消訂單包含取消資訊")
+        void getOrder_CancelledOrder() throws Exception {
+            Order cancelledOrder = Order.builder()
+                    .orderId("order-cancelled")
+                    .passengerId("passenger-001")
+                    .status(OrderStatus.CANCELLED)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(25.5, 30.2))
+                    .dropoffLocation(new Location(45.8, 60.1))
+                    .estimatedFare(150.00)
+                    .distance(8.5)
+                    .createdAt(Instant.now())
+                    .cancelledAt(Instant.now())
+                    .cancelledBy("passenger-001")
+                    .cancelFee(0.0)
+                    .build();
+
+            when(orderService.getOrder("order-cancelled")).thenReturn(cancelledOrder);
+
+            mockMvc.perform(get("/api/orders/order-cancelled"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.data.cancelledAt").exists())
+                    .andExpect(jsonPath("$.data.cancelledBy").value("passenger-001"))
+                    .andExpect(jsonPath("$.data.cancelFee").value(0.0));
         }
     }
 

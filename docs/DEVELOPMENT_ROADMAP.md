@@ -1,7 +1,7 @@
 # 🗺️ 開發路線圖 (Development Roadmap)
 
 > **版本**: v1.0  
-> **最後更新**: 2025-12-28  
+> **最後更新**: 2025-12-26  
 > **專案**: Ride-Dispatch-System
 
 ---
@@ -199,40 +199,13 @@ Phase 4: 前端 & 測試 (可並行) ──────────────�
 > **必須等待**: Phase 3 完成 (API 可呼叫)
 > **可並行開發**: ✅ 是 (所有任務可並行)
 
-#### 4A. 前端開發 🔄 Web 重構進行中
+#### 4A. 前端開發 (JavaFX)
 
 | Issue | 標題 | 優先 | 依賴 | 備註 |
 |-------|------|------|------|------|
-| **#12** | [前端] 初始化 JavaFX Passenger App | 🟢 P3 | #15 | ✅ 2.0 地圖整合完成 |
-| **#13** | [前端] 初始化 JavaFX Driver App | 🟢 P3 | #15, #16 | ✅ 2.0 地圖整合完成 |
-| **#14** | [前端] 初始化 JavaFX Admin Console | 🟢 P3 | #17 | ✅ UI 重構完成 |
-| **NEW** | [前端] Web Client (React + PWA) | 🔴 P0 | #15, #16, #17 | ✅ 3.0 OSM 整合完成 |
-
-**Web Client 3.0 (2025-12-27) ✅ UI 重構完成 (Mobile-First)**:
-- 🌐 **統一 Web 架構**: 從 JavaFX 遷移到 React + TypeScript + MUI
-- 📱 **App-like 體驗**: 乘客端/司機端採用手機優先設計 (全螢幕地圖 + 底部面板)
-- 🖥️ **桌面後台**: 管理後台維持桌面優先設計
-- 📲 **PWA 支援**: 可安裝到主畫面、全螢幕體驗
-- 🔐 **統一登入**: 支援乘客/司機/管理員角色選擇
-- 🗺️ **OpenStreetMap 整合**: 真實地圖、路徑規劃、地址查詢、**後台可設定司機/乘客初始位置 (Demo)**
-- 🚗 **車輛動畫**: 沿真實道路平滑移動
-- 🎨 **UI/UX 優化**: 懸浮按鈕、深色模式、無固定 Header/Footer 設計
-
-**路由入口**:
-- `/rider/*` - 乘客端 (手機版 App-like UI)
-- `/driver/*` - 司機端 (手機版 App-like UI)
-- `/admin/*` - 管理後台 (桌面版 UI)
-
-**技術棧**:
-- React 18 + Vite 5 + TypeScript
-- MUI (Material-UI) 5
-- React Router 6 + Zustand
-- Leaflet + react-leaflet (OpenStreetMap)
-- OSRM API (路徑規劃)
-- Nominatim API (地理編碼)
-- vite-plugin-pwa
-
-**詳細規劃**: 參見 `docs/todo/` 目錄
+| **#12** | [前端] 初始化 JavaFX Passenger App | 🟢 P3 | #15 | |
+| **#13** | [前端] 初始化 JavaFX Driver App | 🟢 P3 | #15, #16 | |
+| **#14** | [前端] 初始化 JavaFX Admin Console | 🟢 P3 | #17 | |
 
 #### 4B. 測試開發 (JUnit)
 

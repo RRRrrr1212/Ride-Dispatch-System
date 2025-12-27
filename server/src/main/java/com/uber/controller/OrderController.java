@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.uber.model.Driver;
-import com.uber.service.DriverService;
 
 /**
  * 訂單 API Controller
@@ -39,7 +37,6 @@ public class OrderController {
     
     private final OrderService orderService;
     private final FareService fareService;
-    private final DriverService driverService;
     
     /**
      * 建立叫車請求
@@ -168,34 +165,12 @@ public class OrderController {
     }
     
     /**
-     * 更新訂單路徑 (前端上傳計算好的路徑，實現司機/乘客共享)
-     * PUT /api/orders/{orderId}/route
-     */
-    @PutMapping("/{orderId}/route")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateRoute(
-            @PathVariable String orderId,
-            @RequestBody Map<String, String> request) {
-        String routePathJson = request.get("routePathJson");
-        
-        Order order = orderService.getOrder(orderId);
-        order.setRoutePathJson(routePathJson);
-        orderService.updateOrder(order); // need to add this method
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("orderId", order.getOrderId());
-        response.put("routePathJson", order.getRoutePathJson());
-        
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-    
-    /**
      * 建構訂單回應資料
      */
     private Map<String, Object> buildOrderResponse(Order order) {
         Map<String, Object> response = new HashMap<>();
         response.put("orderId", order.getOrderId());
         response.put("passengerId", order.getPassengerId());
-        response.put("riderName", order.getRiderName());
         response.put("status", order.getStatus().name());
         response.put("vehicleType", order.getVehicleType().name());
         response.put("pickupLocation", order.getPickupLocation());
@@ -207,18 +182,6 @@ public class OrderController {
         // 條件性欄位
         if (order.getDriverId() != null) {
             response.put("driverId", order.getDriverId());
-            
-            // 查詢司機詳細資訊 (包含位置)
-            try {
-                Driver driver = driverService.getDriver(order.getDriverId());
-                if (driver != null) {
-                    response.put("driverName", driver.getName());
-                    response.put("vehiclePlate", driver.getVehiclePlate());
-                    response.put("driverLocation", driver.getLocation());
-                }
-            } catch (Exception e) {
-                // 忽略錯誤
-            }
         }
         if (order.getAcceptedAt() != null) {
             response.put("acceptedAt", order.getAcceptedAt());
@@ -230,17 +193,11 @@ public class OrderController {
             response.put("completedAt", order.getCompletedAt());
             response.put("fare", order.getActualFare());
             response.put("duration", order.getDuration());
-            response.put("driverEarnings", order.getDriverEarnings());
         }
         if (order.getStatus() == OrderStatus.CANCELLED) {
             response.put("cancelledAt", order.getCancelledAt());
             response.put("cancelledBy", order.getCancelledBy());
             response.put("cancelFee", order.getCancelFee());
-        }
-
-        // 路徑資料
-        if (order.getRoutePathJson() != null && !order.getRoutePathJson().isEmpty()) {
-            response.put("routePathJson", order.getRoutePathJson());
         }
         
         return response;

@@ -198,16 +198,44 @@ clients/
 
 ## 🎮 Demo 流程
 
-## 🎮 Demo 流程
+### 完整叫車流程
 
-詳細的系統演示步驟與搶單測試流程，請參考獨立文件：
+1. **啟動後端**
+   ```bash
+   cd server && mvn spring-boot:run
+   ```
 
-👉 **[DEMO_INSTRUCTIONS.md](../DEMO_INSTRUCTIONS.md)**
+2. **開啟管理後台** (觀察狀態)
+   ```bash
+   cd clients/admin-app && mvn javafx:run
+   ```
 
-該文件包含：
-1. **前置建置步驟** (解決 shared module 依賴問題)
-2. **完整叫車流程** (後端 -> Admin -> Driver -> Passenger)
-3. **搶單演示** (驗證 H2 併發控制)
+3. **開啟司機端並上線**
+   ```bash
+   cd clients/driver-app && mvn javafx:run
+   ```
+   - 填寫資訊 → 開始接單
+
+4. **開啟乘客端並叫車**
+   ```bash
+   cd clients/passenger-app && mvn javafx:run
+   ```
+   - 設定座標 → 選擇車種 → 立即叫車
+
+5. **司機接單完成行程**
+   - 點擊接單 → 開始行程 → 完成行程
+
+6. **觀察管理後台**
+   - 訂單狀態即時更新
+   - 審計日誌記錄所有操作
+
+### 搶單演示 (H2 併發控制)
+
+1. 開啟多個司機端視窗
+2. 所有司機上線
+3. 乘客建立訂單
+4. 多個司機同時點擊「接單」
+5. 只有一位成功，其他收到「此訂單已被其他司機接受」
 
 ---
 
