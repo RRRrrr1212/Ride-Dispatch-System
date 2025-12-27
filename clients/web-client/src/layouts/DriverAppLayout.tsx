@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -10,11 +10,20 @@ import {
   BottomNavigationAction,
   Paper,
   Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  Divider,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   LocalShipping as OrderIcon,
   DirectionsCar as TripIcon,
   Person as PersonIcon,
+  Logout as LogoutIcon,
+  Settings as SettingsIcon,
+  MoreVert as MoreIcon,
 } from '@mui/icons-material';
 import { useDriverStore } from '../stores/driver.store';
 import { useAuthStore } from '../stores/auth.store';
@@ -22,8 +31,12 @@ import { useAuthStore } from '../stores/auth.store';
 export function DriverAppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthStore();
-  const { isOnline, toggleOnline, driver, setDriver } = useDriverStore();
+  const { user, logout } = useAuthStore();
+  const { isOnline, toggleOnline, driver, setDriver, clearDriver } = useDriverStore();
+  
+  // 選單狀態
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
 
   // 自動初始化 driver (Demo 用途)
   useEffect(() => {
@@ -69,6 +82,24 @@ export function DriverAppLayout() {
     }
   };
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    // 清除司機狀態
+    clearDriver();
+    // 登出
+    logout();
+    // 導航到登入頁
+    navigate('/login', { replace: true });
+  };
+
   return (
     <Box
       sx={{
@@ -98,6 +129,50 @@ export function DriverAppLayout() {
             color="success"
             data-testid="toggle-online"
           />
+          
+          {/* 更多選項按鈕 */}
+          <IconButton
+            color="inherit"
+            onClick={handleMenuOpen}
+            data-testid="btn-menu"
+          >
+            <MoreIcon />
+          </IconButton>
+          
+          {/* 下拉選單 */}
+          <Menu
+            anchorEl={anchorEl}
+            open={menuOpen}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem disabled>
+              <ListItemText 
+                primary={driver?.name || user?.name || '司機'} 
+                secondary={driver?.vehiclePlate || ''} 
+              />
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleMenuClose}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>設定</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleLogout} data-testid="btn-logout">
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText sx={{ color: 'error.main' }}>登出</ListItemText>
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

@@ -12,6 +12,7 @@ interface DriverState {
   toggleOnline: () => Promise<void>;
   goOnline: () => Promise<void>;
   goOffline: () => Promise<void>;
+  clearDriver: () => void;  // 登出時清除所有資料
 }
 
 export const useDriverStore = create<DriverState>()(
@@ -81,6 +82,10 @@ export const useDriverStore = create<DriverState>()(
           // Demo 模式下，即使 API 失敗也模擬下線
           set({ isOnline: false });
         }
+      },
+
+      clearDriver: () => {
+        set({ driver: null, isOnline: false, location: null });
       },
     }),
     {

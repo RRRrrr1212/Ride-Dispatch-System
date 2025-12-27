@@ -45,11 +45,11 @@ export function TripPage() {
   const [tripPath, setTripPath] = useState<MapLocation[] | null>(null);
   const hasStartedTripAnimationRef = useRef(false);
 
-  // 使用動畫 Hook
+  // 使用動畫 Hook - 降低速度使動畫更真實
   const { position: animatedCarPos, progress } = useAnimatedPosition(
     tripPath,
     {
-      speed: 15,
+      speed: 5, // 降低速度，原本是15
       enabled: true,
       onComplete: () => {
         console.log('車輛已到達目的地');

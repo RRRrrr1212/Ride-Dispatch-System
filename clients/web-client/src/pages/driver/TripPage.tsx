@@ -45,11 +45,11 @@ export function TripPage() {
   const hasStartedToPickupRef = useRef(false);
   const hasStartedToDropoffRef = useRef(false);
 
-  // 使用動畫 Hook
+  // 使用動畫 Hook - 降低速度使動畫更真實
   const { position: animatedDriverPos, progress } = useAnimatedPosition(
     currentPath,
     {
-      speed: 20,
+      speed: 5, // 降低速度，原本是20
       enabled: true,
     }
   );
