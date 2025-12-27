@@ -24,7 +24,7 @@ release.properties
 
 # OS specific
 .DS_Store
-Thumbs.db
+Thumbs.db 
 
 # Java
 *.class

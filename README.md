@@ -60,9 +60,9 @@ ride-dispatch-system/
 ## 🚀 快速開始
 
 ### 環境需求
-- Java 17+
+- Java 21+
 - Maven 3.9+
-- JavaFX 17+
+- JavaFX 21+
 
 ### 啟動後端
 ```bash
@@ -75,7 +75,7 @@ mvn spring-boot:run
 cd clients
 mvn javafx:run -pl passenger-app
 mvn javafx:run -pl driver-app
-mvn javafx:run -pl admin-console
+mvn javafx:run -pl admin-app
 ```
 
 ## 🧪 測試重點
