@@ -13,7 +13,7 @@ interface PaginatedOrders {
 
 export const adminApi = {
   // 取得所有訂單
-  getOrders: (params?: { status?: OrderStatus; page?: number; size?: number }) =>
+  getOrders: (params?: { status?: OrderStatus; passengerId?: string; driverId?: string; page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PaginatedOrders>>('/admin/orders', { params }),
 
   // 取得訂單詳情

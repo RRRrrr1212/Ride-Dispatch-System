@@ -46,10 +46,19 @@ public class AdminController {
     @GetMapping("/orders")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllOrders(
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String passengerId,
+            @RequestParam(required = false) String driverId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         List<Order> orders = orderService.getAllOrders();
+        
+        // 默認按時間倒序排列 (最新的在前)
+        orders.sort((o1, o2) -> {
+            if (o1.getCreatedAt() == null) return 1;
+            if (o2.getCreatedAt() == null) return -1;
+            return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+        });
         
         // 狀態篩選
         if (status != null && !status.isEmpty()) {
@@ -61,6 +70,20 @@ public class AdminController {
             } catch (IllegalArgumentException e) {
                 // 無效的狀態參數，忽略篩選
             }
+        }
+
+        // 乘客 ID 篩選
+        if (passengerId != null && !passengerId.isEmpty()) {
+            orders = orders.stream()
+                    .filter(o -> passengerId.equals(o.getPassengerId()))
+                    .collect(Collectors.toList());
+        }
+
+        // 司機 ID 篩選
+        if (driverId != null && !driverId.isEmpty()) {
+            orders = orders.stream()
+                    .filter(o -> driverId.equals(o.getDriverId()))
+                    .collect(Collectors.toList());
         }
         
         int totalElements = orders.size();

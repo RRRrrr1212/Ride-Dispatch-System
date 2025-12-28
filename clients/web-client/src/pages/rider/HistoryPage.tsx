@@ -36,7 +36,7 @@ export function HistoryPage() {
       
       try {
         // 使用 admin API 取得歷史訂單 (Demo 用途)
-        const response = await adminApi.getOrders({ status: 'COMPLETED' });
+        const response = await adminApi.getOrders({ status: 'COMPLETED', passengerId: user.id });
         if (response.data.success && response.data.data) {
           // 過濾出該乘客的訂單
           const allOrders = response.data.data.orders || [];
@@ -52,7 +52,7 @@ export function HistoryPage() {
         console.error('取得歷史訂單失敗:', err);
         // 如果 API 失敗，嘗試取得所有訂單
         try {
-          const response = await adminApi.getOrders({});
+          const response = await adminApi.getOrders({ passengerId: user.id });
           if (response.data.success && response.data.data) {
             const allOrders = response.data.data.orders || [];
             const completedOrders = allOrders.filter(

@@ -7,14 +7,11 @@ import {
   CircularProgress,
   Paper,
   LinearProgress,
-  IconButton,
+
 } from '@mui/material';
 import {
   LocationOn as PickupIcon,
-  Phone as PhoneIcon,
-  Message as MessageIcon,
   EmojiTransportation as CarIcon,
-  CenterFocusStrong as FitBoundsIcon,
 } from '@mui/icons-material';
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
@@ -57,11 +54,7 @@ export function WaitingPage() {
     setAutoCenter(false);
   };
   
-  // 恢復自動置中
-  const handleRecenter = () => {
-    setAutoCenter(true);
-    setManualFitBounds(false);
-  };
+
   
   // 等待計時器
   useEffect(() => {
@@ -117,7 +110,7 @@ export function WaitingPage() {
               positions.push(newPos);
               if (positions.length > 3) positions.shift(); // 只保留最近 3 個
               
-              // 如果有 3 個位置且變化都小於 15 公尺，認為已停止
+              // 如果有 3 個位置且變化都小於 0.5 公尺，認為已停止
               if (positions.length >= 3) {
                 const isStationary = positions.every((pos, i) => {
                   if (i === 0) return true;
@@ -126,7 +119,7 @@ export function WaitingPage() {
                     Math.pow((pos.lat - prev.lat) * 111000, 2) +
                     Math.pow((pos.lng - prev.lng) * 111000 * Math.cos(pos.lat * Math.PI / 180), 2)
                   );
-                  return dist < 2.5; // 移動小於 2.5 公尺 (約 9km/h) 視為停止
+                  return dist < 0.5; // 移動小於 0.5 公尺 (約 3.6km/h) 視為停止 (更嚴謹)
                 });
                 setDriverStopped(isStationary);
               }
@@ -217,13 +210,13 @@ export function WaitingPage() {
       return { minutes: -1, distanceM: distM, isArrived: false };
     }
     
-    // 判斷是否已到達：距離 < 50m 或 司機已停止且距離 < 100m
-    const isArrived = distM < 50 || (driverStopped && distM < 100);
+    // 判斷是否已到達：與司機端保持一致 (100公尺)
+    const isArrived = distM <= 100;
     
-    // 假設市區均速 30km/h = 500m/min
+    // 假設市區均速 45km/h
     // 直線距離乘以 1.3 係數來模擬實際道路距離
     const estimatedDistM = distM * 1.3;
-    const mins = Math.ceil(estimatedDistM / 500);
+    const mins = Math.ceil((estimatedDistM / 1000) / 45 * 60);
     
     return { 
       minutes: Math.max(1, mins), 
@@ -270,9 +263,7 @@ export function WaitingPage() {
     return null;
   }, [order?.status, driverPosition, pickupLocation, dropoffLocation, manualFitBounds]);
 
-  const handleFitBounds = () => {
-    setManualFitBounds(false); // 啟用自動邊界
-  };
+
 
   const [routePath, setRoutePath] = useState<MapLocation[] | null>(null);
 

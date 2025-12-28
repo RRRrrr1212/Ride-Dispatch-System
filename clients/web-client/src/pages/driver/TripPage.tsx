@@ -68,7 +68,7 @@ export function TripPage() {
     {
       label: '收入',
       icon: <AttachMoneyIcon fontSize="small" />,
-      onClick: () => {},
+      onClick: () => navigate('/driver/earnings'),
     },
     {
       label: '登出',
@@ -155,8 +155,8 @@ export function TripPage() {
     if (stored) {
       const startTime = parseInt(stored, 10);
       const elapsedSec = (Date.now() - startTime) / 1000;
-      // 速度為 2 點/秒 (根據 useAnimatedPosition 設定)
-      const estimatedIndex = Math.floor(elapsedSec * 2); 
+      // 速度為 30 點/秒
+      const estimatedIndex = Math.floor(elapsedSec * 30); 
       setSimulationStartIndex(estimatedIndex);
     } else {
       localStorage.setItem(key, Date.now().toString());
@@ -167,7 +167,7 @@ export function TripPage() {
   const { position: animatedDriverPos } = useAnimatedPosition(
     currentPath,
     {
-      speed: 2, // 速度翻倍
+      speed: 6, // 速度同步為 6
       enabled: true,
       initialIndex: simulationStartIndex, // 傳入初始索引
     }
@@ -217,10 +217,11 @@ export function TripPage() {
       const estimatedDist = dist * 1.3;
       setEtaInfo({
         distance: Math.round(dist), // Keep straight line distance for display or update if needed
-        minutes: Math.ceil((estimatedDist / 1000) / 60 * 60) // 假設時速 60km/h (配合2倍速)
+        // 統一使用 45km/h (750m/min) 計算
+        minutes: Math.ceil((estimatedDist / 1000) / 45 * 60)
       });
-      // Stricter arrival detection: radius reduced to 50m
-      const isArriving = dist <= 50;
+      // Relaxed arrival detection: radius increased to 100m
+      const isArriving = dist <= 100;
       setCanInteract(isArriving);
       
       // 到達時自動放大到目標位置
