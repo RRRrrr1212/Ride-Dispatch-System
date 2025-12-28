@@ -10,6 +10,7 @@ interface UseAnimatedPositionOptions {
   enabled?: boolean;       // 是否啟用動畫，預設 true
   onComplete?: () => void; // 動畫完成時的回調
   onProgress?: (progress: number, currentPosition: Position) => void; // 進度回調
+  initialIndex?: number;   // 初始索引 (用於狀態恢復)
 }
 
 /**
@@ -27,13 +28,14 @@ export function useAnimatedPosition(
     enabled = true, 
     onComplete,
     onProgress,
+    initialIndex = 0, // 預設從 0 開始
   } = options;
 
   const [currentPosition, setCurrentPosition] = useState<Position | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [progress, setProgress] = useState(0); // 0 - 1 之間
   
-  const indexRef = useRef(0);
+  const indexRef = useRef(initialIndex);
   const intervalRef = useRef<number | null>(null);
   const pathRef = useRef<Position[] | null>(null);
 
@@ -103,17 +105,54 @@ export function useAnimatedPosition(
       return;
     }
 
-    indexRef.current = 0;
-    setProgress(0);
-    setCurrentPosition(path[0]);
+    // 如果傳入的 initialIndex 有效且是第一次載入 (或路徑變化但我們想保持一些狀態?)
+    // 這裡我們簡化：每次路徑變更如果是全新的，預設是 0，除非外部控制 initialIndex 變了
+    // 但因為 initialIndex 是 prop，最好只在 mount 時生效，或者我們手動控制
+    
+    // 修正：如果此時 indexRef 已經有值且未重置，可能不需要強制設為 0？
+    // 但為了安全，如果 path 變了，通常意味著新路徑。
+    // 為了支援「恢復」，我們依賴元件 mount 時傳入的 correct initialIndex
+    
+    // 如果目前的 indexRef 超出新路徑範圍，重置
+    if (indexRef.current >= path.length) {
+       indexRef.current = 0;
+    } 
+    // 注意：這裡如果我們想讓 Hook 內部狀態優先，就不該每次都重置 indexRef.current = 0
+    // 但因為 useEffect 依賴 path，path 變了通常要重置。
+    // 解決方案：我們依賴 options.initialIndex *只在第一次* 生效？
+    // 或者，我們信任傳進來的 initialIndex。
+    
+    if (options.initialIndex !== undefined && options.initialIndex !== 0) {
+       indexRef.current = options.initialIndex;
+    } else {
+       // 如果沒有指定 initialIndex，則只有在路徑完全不同時才重置？
+       // 為了簡單起見，這裡我們假設如果 path 變了就是新的
+       // 但在這個應用中，path 可能因為重新 fetch 而 reference 變了但內容一樣
+       // 所以我們最好保持 indexRef 不變，除非顯式重置
+       // 暫時維持原邏輯，但在這裡讀取 prop
+       if (indexRef.current === 0) {
+          // 只有當它是 0 (預設) 的時候才不需要做什麼
+       }
+    }
+    
+    // 確實重置邏輯：
+    // 如果外部傳入 initialIndex，使用它。
+    if (options.initialIndex !== undefined) {
+      indexRef.current = options.initialIndex;
+    } else {
+      indexRef.current = 0;
+    }
+
+    const startPosIndex = indexRef.current < path.length ? indexRef.current : 0;
+    setProgress(startPosIndex / (path.length - 1 || 1));
+    setCurrentPosition(path[startPosIndex]);
     
     // 自動開始動畫
     if (enabled && path.length > 1) {
-      // 短暫延遲後開始，讓使用者看到起點
       const timer = setTimeout(start, 500);
       return () => clearTimeout(timer);
     }
-  }, [path, enabled, stop, start]);
+  }, [path, enabled, stop, start, options.initialIndex]);
 
   // 清理
   useEffect(() => {

@@ -31,6 +31,9 @@ interface LeafletMapProps {
   showCenterPin?: boolean;
   loading?: boolean;
   loadingText?: string;
+  bounds?: MapLocation[] | null; // 多點邊界，可用於自動縮放包含所有點
+  bottomOffset?: number; // 底部偏移量 (px)，用於適應底部 Sheet
+  topOffset?: number;    // 頂部偏移量 (px)，用於避開頂部 UI (如司機狀態開關)
 }
 
 // 修復 Leaflet 預設圖標問題
@@ -111,27 +114,49 @@ function MapEventHandler({
 function MapController({ 
   center, 
   zoom,
-  flyToCenter,
+  bounds,
+  bottomOffset = 0,
 }: { 
   center: MapLocation; 
   zoom: number;
-  flyToCenter?: boolean;
+  bounds?: MapLocation[] | null;
+  bottomOffset?: number;
 }) {
   const map = useMap();
-  const initialCenterRef = useRef<MapLocation | null>(null);
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
+    // 優先處理邊界縮放 (fitBounds)
+    if (bounds && bounds.length > 0) {
+      const leafletBounds = L.latLngBounds(
+        bounds.map(b => L.latLng(b.lat, b.lng))
+      );
+      
+      if (leafletBounds.isValid()) {
+        map.fitBounds(leafletBounds, { 
+          paddingTopLeft: [50, 50],
+          paddingBottomRight: [50, 50 + bottomOffset], // 底部留白，避開面板
+          maxZoom: 16,
+          animate: true,
+          duration: 1
+        });
+        hasInitializedRef.current = true;
+        return; 
+      }
+    }
+
     if (!hasInitializedRef.current) {
-      initialCenterRef.current = center;
       hasInitializedRef.current = true;
       return;
     }
 
-    if (flyToCenter) {
-      map.flyTo([center.lat, center.lng], zoom, { duration: 0.5 });
+    const currentCenter = map.getCenter();
+    const distance = map.distance([center.lat, center.lng], currentCenter);
+
+    if (distance > 50) {
+      map.setView([center.lat, center.lng], zoom);
     }
-  }, [map, center, zoom, flyToCenter]);
+  }, [map, center, zoom, bounds, bottomOffset]);
 
   return null;
 }
@@ -154,7 +179,7 @@ function CenterPin({ mode }: { mode: 'pickup' | 'dropoff' | null }) {
           width: 40,
           height: 40,
           borderRadius: '50%',
-          bgcolor: mode === 'pickup' ? 'success.main' : 'error.main',
+          bgcolor: 'black',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -178,7 +203,7 @@ function CenterPin({ mode }: { mode: 'pickup' | 'dropoff' | null }) {
           height: 0,
           borderLeft: '10px solid transparent',
           borderRight: '10px solid transparent',
-          borderTop: `15px solid ${mode === 'pickup' ? '#22c55e' : '#ef4444'}`,
+          borderTop: '15px solid black',
           margin: '0 auto',
           marginTop: '-2px',
         }}
@@ -199,6 +224,9 @@ export function LeafletMap({
   showCenterPin = false,
   loading = false,
   loadingText = '載入中...',
+  bounds,
+  bottomOffset = 0,
+  topOffset = 10,
 }: LeafletMapProps) {
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -266,7 +294,7 @@ export function LeafletMap({
         <MapEventHandler onMapClick={onMapClick} onCenterChange={onCenterChange} />
 
         {/* 地圖控制器 */}
-        <MapController center={center} zoom={zoom} />
+        <MapController center={center} zoom={zoom} bounds={bounds} bottomOffset={bottomOffset} />
 
         {/* 渲染路徑線 */}
         {routePath && routePath.length > 1 && (
@@ -300,7 +328,7 @@ export function LeafletMap({
           sx={{
             position: 'absolute',
             right: 10,
-            top: 10,
+            top: topOffset,
             display: 'flex',
             flexDirection: 'column',
             gap: 0.5,
@@ -351,20 +379,29 @@ export function LeafletMap({
         <Box
           sx={{
             position: 'absolute',
-            top: 10,
+            top: 24, // 稍微往下移一點，避開瀏覽器邊緣
             left: '50%',
             transform: 'translateX(-50%)',
-            bgcolor: selectionMode === 'pickup' ? 'success.main' : 'error.main',
+            bgcolor: 'rgba(0,0,0,0.85)', // 深黑色透明背景
             color: '#fff',
-            px: 2,
-            py: 0.5,
-            borderRadius: 1,
+            px: 2.5,
+            py: 1.2,
+            borderRadius: 8,
             zIndex: 1000,
-            boxShadow: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            backdropFilter: 'blur(8px)',
+            whiteSpace: 'nowrap', // 強制不換行
+            maxWidth: '90%',      // 避免在極小螢幕溢出
+            justifyContent: 'center',
           }}
         >
-          <Typography variant="body2">
-            {selectionMode === 'pickup' ? '📍 拖動地圖選擇上車地點' : '🎯 拖動地圖選擇下車地點'}
+          {/* 小圓點指示器 (綠色/紅色) */}
+          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: selectionMode === 'pickup' ? '#22c55e' : '#ef4444', flexShrink: 0 }} />
+          <Typography variant="body2" fontWeight={500} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {selectionMode === 'pickup' ? '拖動地圖選擇上車地點' : '拖動地圖選擇下車地點'}
           </Typography>
         </Box>
       )}

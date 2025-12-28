@@ -95,3 +95,11 @@ export interface RatePlan {
   perMinRate: number;
   minFare: number;
 }
+
+// 乘客類型
+export interface Rider {
+  riderId: string;
+  name: string;
+  phone: string;
+  createdAt: string;
+}

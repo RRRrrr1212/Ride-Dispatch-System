@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Box, Typography, Card, CardContent } from '@mui/material';
+import { adminApi } from '../../api/admin.api';
 
 interface StatCardProps {
   title: string;
@@ -22,13 +24,48 @@ function StatCard({ title, value, color = 'primary.main' }: StatCardProps) {
 }
 
 export function DashboardPage() {
-  // TODO: 從 API 取得統計數據
-  const stats = {
-    totalOrders: 156,
-    pendingOrders: 3,
-    completedOrders: 142,
-    onlineDrivers: 8,
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
+    onlineDrivers: 0,
+  });
+
+  const fetchStats = async () => {
+    try {
+      const response = await adminApi.getOrders();
+      if (response.data.success && response.data.data) {
+        const orders = response.data.data.orders || [];
+        const pending = orders.filter((o: any) => o.status === 'PENDING').length;
+        const completed = orders.filter((o: any) => o.status === 'COMPLETED').length;
+        
+        setStats({
+          totalOrders: orders.length,
+          pendingOrders: pending,
+          completedOrders: completed,
+          onlineDrivers: 0,
+        });
+      }
+    } catch (error) {
+      console.error('取得統計失敗:', error);
+    }
+    
+    // 取得司機統計
+    try {
+      const driversResponse = await adminApi.getDrivers();
+      if (driversResponse.data.success && driversResponse.data.data) {
+        const drivers = driversResponse.data.data.drivers || [];
+        const onlineCount = drivers.filter((d: any) => d.status === 'ONLINE').length;
+        setStats(prev => ({ ...prev, onlineDrivers: onlineCount }));
+      }
+    } catch (error) {
+      console.error('取得司機統計失敗:', error);
+    }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   return (
     <Box>

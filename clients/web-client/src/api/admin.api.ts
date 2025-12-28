@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Order, Driver, AuditLog, RatePlan, ApiResponse, OrderStatus } from '../types';
+import type { Order, Driver, AuditLog, RatePlan, ApiResponse, OrderStatus, Rider } from '../types';
 
 interface PaginatedOrders {
   orders: Order[];
@@ -39,4 +39,28 @@ export const adminApi = {
   // 創建司機
   createDriver: (data: { driverId: string; name: string; phone: string; vehiclePlate: string; vehicleType: string }) =>
     apiClient.post<ApiResponse<Driver>>('/admin/drivers', data),
+
+  // ========== 乘客管理 ==========
+  
+  // 取得所有乘客
+  getRiders: () =>
+    apiClient.get<ApiResponse<{ riders: Rider[]; count: number }>>('/admin/riders'),
+  
+  // 建立乘客
+  createRider: (data: { riderId: string; name: string; phone: string }) =>
+    apiClient.post<ApiResponse<Rider>>('/admin/riders', data),
+  
+  // 取得單一乘客
+  getRider: (riderId: string) =>
+    apiClient.get<ApiResponse<Rider>>(`/admin/riders/${riderId}`),
+  
+  // 刪除乘客
+  deleteRider: (riderId: string) =>
+    apiClient.delete<ApiResponse<string>>(`/admin/riders/${riderId}`),
+
+  // ========== 資料管理 ==========
+  
+  // 清除所有資料
+  clearAll: () =>
+    apiClient.delete<ApiResponse<{ message: string; clearedAt: string }>>('/admin/clear-all'),
 };

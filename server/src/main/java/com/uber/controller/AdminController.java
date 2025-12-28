@@ -2,11 +2,13 @@ package com.uber.controller;
 
 import com.uber.dto.ApiResponse;
 import com.uber.model.*;
+import com.uber.repository.*;
 import com.uber.service.AuditService;
 import com.uber.service.DriverService;
 import com.uber.service.FareService;
 import com.uber.service.OrderService;
 import com.uber.service.PassengerService;
+import com.uber.service.RiderService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +31,13 @@ public class AdminController {
     private final OrderService orderService;
     private final DriverService driverService;
     private final PassengerService passengerService;
+    private final RiderService riderService;
     private final AuditService auditService;
     private final FareService fareService;
+    private final OrderRepository orderRepository;
+    private final DriverRepository driverRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final RiderRepository riderRepository;
     
     /**
      * 取得所有訂單 (支援分頁和狀態篩選)
@@ -270,6 +277,77 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
     
+    // ========== 乘客管理 API ==========
+    
+    /**
+     * 取得所有乘客
+     */
+    @GetMapping("/riders")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllRiders() {
+        List<Rider> riders = riderService.getAllRiders();
+        
+        List<Map<String, Object>> riderList = riders.stream()
+                .map(this::buildRiderSummary)
+                .collect(Collectors.toList());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("riders", riderList);
+        response.put("count", riderList.size());
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 建立乘客帳號
+     */
+    @PostMapping("/riders")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createRider(@RequestBody CreateRiderRequest request) {
+        Rider rider = riderService.createRider(
+                request.getRiderId(),
+                request.getName(),
+                request.getPhone());
+        
+        return ResponseEntity.ok(ApiResponse.success(buildRiderSummary(rider)));
+    }
+    
+    /**
+     * 取得單一乘客
+     */
+    @GetMapping("/riders/{riderId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getRider(@PathVariable String riderId) {
+        Rider rider = riderService.getRider(riderId);
+        return ResponseEntity.ok(ApiResponse.success(buildRiderSummary(rider)));
+    }
+    
+    /**
+     * 刪除乘客
+     */
+    @DeleteMapping("/riders/{riderId}")
+    public ResponseEntity<ApiResponse<String>> deleteRider(@PathVariable String riderId) {
+        riderService.deleteRider(riderId);
+        return ResponseEntity.ok(ApiResponse.success("乘客已刪除"));
+    }
+    
+    // ========== 資料管理 API ==========
+    
+    /**
+     * 清除所有資料
+     */
+    @DeleteMapping("/clear-all")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> clearAllData() {
+        // 清除所有資料
+        orderRepository.deleteAll();
+        driverRepository.deleteAll();
+        auditLogRepository.deleteAll();
+        riderRepository.deleteAll();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "所有資料已清除");
+        response.put("clearedAt", Instant.now());
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
     // DTOs
     @Data
     static class CreateDriverRequest {
@@ -287,7 +365,23 @@ public class AdminController {
         private String phone;
     }
     
+    @Data
+    static class CreateRiderRequest {
+        private String riderId;
+        private String name;
+        private String phone;
+    }
+    
     // ========== 私有方法 ==========
+    
+    private Map<String, Object> buildRiderSummary(Rider rider) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("riderId", rider.getRiderId());
+        summary.put("name", rider.getName());
+        summary.put("phone", rider.getPhone());
+        summary.put("createdAt", rider.getCreatedAt());
+        return summary;
+    }
     
     private Map<String, Object> buildOrderSummary(Order order) {
         Map<String, Object> summary = new HashMap<>();

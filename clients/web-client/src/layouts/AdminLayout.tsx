@@ -20,6 +20,7 @@ import {
   Dashboard as DashboardIcon,
   Receipt as OrderIcon,
   DirectionsCar as DriverIcon,
+  Person as PersonIcon,
   History as LogIcon,
   AttachMoney as RateIcon,
   Menu as MenuIcon,
@@ -32,6 +33,7 @@ const menuItems = [
   { text: '儀表板', icon: <DashboardIcon />, path: '/admin/dashboard' },
   { text: '訂單管理', icon: <OrderIcon />, path: '/admin/orders' },
   { text: '司機管理', icon: <DriverIcon />, path: '/admin/drivers' },
+  { text: '乘客管理', icon: <PersonIcon />, path: '/admin/riders' },
   { text: '審計日誌', icon: <LogIcon />, path: '/admin/audit-logs' },
   { text: '費率設定', icon: <RateIcon />, path: '/admin/rate-plans' },
 ];

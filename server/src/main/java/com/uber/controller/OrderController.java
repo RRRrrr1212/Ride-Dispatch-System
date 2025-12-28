@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.uber.model.Driver;
+import com.uber.service.DriverService;
 
 /**
  * 訂單 API Controller
@@ -37,6 +39,7 @@ public class OrderController {
     
     private final OrderService orderService;
     private final FareService fareService;
+    private final DriverService driverService;
     
     /**
      * 建立叫車請求
@@ -182,6 +185,18 @@ public class OrderController {
         // 條件性欄位
         if (order.getDriverId() != null) {
             response.put("driverId", order.getDriverId());
+            
+            // 查詢司機詳細資訊 (包含位置)
+            try {
+                Driver driver = driverService.getDriver(order.getDriverId());
+                if (driver != null) {
+                    response.put("driverName", driver.getName());
+                    response.put("vehiclePlate", driver.getVehiclePlate());
+                    response.put("driverLocation", driver.getLocation());
+                }
+            } catch (Exception e) {
+                // 忽略錯誤
+            }
         }
         if (order.getAcceptedAt() != null) {
             response.put("acceptedAt", order.getAcceptedAt());
