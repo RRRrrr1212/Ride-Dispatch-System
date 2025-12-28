@@ -23,14 +23,15 @@
 ## 2. 系統架構 (System Architecture)
 
 ### 2.1 架構模式
-採用 **Client-Server** 架構，模擬真實系統的分層設計。
+採用 **Client-Server** 架構，前端為 SPA (Single Page Application)，後端為 REST API 服務。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Client Layer (JavaFX)                    │
+│                 Web Clients (React + PWA)                   │
 ├──────────────┬──────────────────┬───────────────────────────┤
 │ Passenger App│   Driver App     │      Admin Console        │
-│  (乘客端)     │    (司機端)       │       (管理後台)          │
+│ (/rider)     │   (/driver)      │      (/admin)             │
+│ Mobile-View  │   Mobile-View    │      Desktop-View         │
 └──────┬───────┴────────┬─────────┴─────────────┬─────────────┘
        │                │                       │
        │         HTTP/REST (Polling)            │
@@ -52,18 +53,20 @@
 ### 2.2 技術堆疊
 | 層級 | 技術選型 | 版本 | 用途 |
 |-----|---------|-----|-----|
-| Client | JavaFX | 21+ | 桌面 UI 應用程式 |
-| Server | Spring Boot | 3.x | RESTful API 服務 |
-| Build | Maven | 3.9+ | 專案建構與依賴管理 |
+| Frontend | React | 18.x | 網頁框架 |
+| Frontend | TypeScript | 5.x | 靜態型別語言 |
+| Frontend | MUI (Material-UI) | 5.x | UI 元件庫 |
+| Frontend | Leaflet / React-Leaflet | 1.9+ | 地圖整合 (OpenStreetMap) |
+| Frontend | Vite | 5.x | 前端建構工具 |
+| Backend | Spring Boot | 3.x | RESTful API 服務 |
+| Build | Maven | 3.9+ | 後端建構管理 |
 | Test | JUnit 5 | 5.10+ | 單元與整合測試 |
-| Test | Mockito | 5.x | Mock 物件框架 |
-| Quality | JaCoCo | 0.8.11+ | 測試覆蓋率分析 |
-| Quality | PMD | 7.x | 靜態程式碼分析 |
 
 ### 2.3 通訊協定
 *   **協定類型**：HTTP/REST
 *   **資料格式**：JSON
-*   **同步機制**：Polling（每 0.5–1 秒輪詢）
+*   **同步機制**：Polling（每 1–3 秒輪詢）
+*   **地圖服務**：OpenStreetMap (Tile Server) + OSRM (Routing API)
 
 ---
 

@@ -599,25 +599,41 @@ Content-Type: application/json
 | POST | `/api/orders` | 建立叫車請求 |
 | GET | `/api/orders/{orderId}` | 查詢訂單狀態 |
 | PUT | `/api/orders/{orderId}/cancel` | 取消訂單 |
+| PUT | `/api/orders/{orderId}/route` | 更新導航路徑 (司機/乘客共享) |
 
 ### 5.2 Driver 端點
 | Method | Endpoint | 說明 |
 |--------|----------|-----|
+| POST | `/api/drivers` | 註冊司機 |
 | PUT | `/api/drivers/{driverId}/online` | 司機上線 |
 | PUT | `/api/drivers/{driverId}/offline` | 司機下線 |
 | PUT | `/api/drivers/{driverId}/location` | 更新位置 |
 | GET | `/api/drivers/{driverId}/offers` | 取得可接訂單 |
-| PUT | `/api/orders/{orderId}/accept` | 接受訂單 |
+| GET | `/api/drivers/{driverId}` | 取得司機資訊 |
+| PUT | `/api/orders/{orderId}/accept` | 接受訂單 (搶單) |
 | PUT | `/api/orders/{orderId}/start` | 開始行程 |
 | PUT | `/api/orders/{orderId}/complete` | 完成行程 |
 
 ### 5.3 Admin 端點
 | Method | Endpoint | 說明 |
 |--------|----------|-----|
-| GET | `/api/admin/orders` | 取得所有訂單 |
+| GET | `/api/admin/orders` | 取得所有訂單 (支援篩選) |
+| GET | `/api/admin/orders/{orderId}` | 取得訂單詳情 |
+| GET | `/api/admin/drivers` | 取得所有司機 |
+| POST | `/api/admin/drivers` | 新增司機 |
+| GET | `/api/admin/riders` | 取得所有乘客 |
+| POST | `/api/admin/riders` | 新增乘客 |
+| GET | `/api/admin/riders/{riderId}` | 取得乘客詳情 |
+| DELETE | `/api/admin/riders/{riderId}` | 刪除乘客 |
 | GET | `/api/admin/audit-logs` | 取得 Audit Log |
+| GET | `/api/admin/accept-stats/{orderId}` | 取得搶單統計 (H2) |
 | GET | `/api/admin/rate-plans` | 取得費率設定 |
 | PUT | `/api/admin/rate-plans/{vehicleType}` | 更新費率設定 |
+| GET | `/api/admin/stats` | 取得系統統計儀表板 |
+| DELETE | `/api/admin/clear-all` | 清除所有資料 (重置系統) |
+| PUT | `/api/admin/drivers/{driverId}/location` | 設定司機位置 (Demo) |
+| PUT | `/api/admin/riders/{riderId}/location` | 設定乘客位置 (Demo) |
+| POST | `/api/admin/riders/{riderId}/force-cancel-orders` | 強制取消乘客訂單 (修復用) |
 
 ---
 

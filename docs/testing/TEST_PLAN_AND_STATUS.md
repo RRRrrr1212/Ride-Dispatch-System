@@ -26,12 +26,15 @@
 | `OrderControllerTest` | 測試 `/orders` 相關 API 端點 (MockMvc) | ✅ 已實作 |
 | `DriverControllerTest` | 測試 `/drivers` 相關 API 端點 (MockMvc) | ✅ 已實作 |
 | `AdminControllerTest` | 測試 `/admin` 管理功能 (訂單查詢、司機管理) | ✅ 已實作 |
+| `PassengerControllerTest` | 測試 `/passengers` 建立與查詢乘客 (NEW) | 🔴 待實作 |
 
 ### 3. 進階場景測試 (Advanced Scenarios)
 | 測試類別 | 說明 | 狀態 |
 |---------|------|------|
 | `ConcurrencyH2Test` | **H2 搶單併發測試**<br>- 模擬 10 個執行緒同時搶單<br>- 驗證僅 1 人成功，其他人 409 Conflict | ✅ 已實作 |
 | `IdempotencyH4Test` | **H4 冪等性測試**<br>- 模擬重複送出 Accept/Cancel 請求<br>- 驗證資料一致性與回應正確性 | ✅ 已實作 |
+| `LocationUpdateTest` | **地理位置更新測試** (NEW)<br>- 測試司機與乘客在訂單進行中更改位置<br>- 驗證狀態鎖定 (Busy 時不可更改) | 🔴 待實作 |
+| `AdminIntegrationTest` | **管理員強制操作測試** (NEW)<br>- 測試 `Force Cancel` 功能<br>- 驗證強制取消後的狀態與司機釋放 | 🔴 待實作 |
 
 ---
 
@@ -39,14 +42,16 @@
 
 雖然主要測試類別已存在，但仍需進行以下工作以確保品質：
 
-### 1. 測試執行與除錯 (Execution & Debugging)
+### 1. 新增功能測試 (New Features)
+- [ ] **Passenger Management**: 測試乘客建立、查詢與刪除 (CRUD)。
+- [ ] **Location Guard**: 驗證「訂單進行中無法更改位置」的保護機制。
+- [ ] **Force Cancel**: 驗證管理員強制取消訂單後，司機狀態是否正確釋放 (Busy=false)。
+- [ ] **Data Cleanup**: 驗證 `Clear All Data` API 是否能正確清空所有表格。
+
+### 2. 測試執行與除錯 (Execution & Debugging)
 - [ ] **執行全套測試**: 執行 `mvn test` 確保所有 10+ 個測試類別皆通過 (Green Check)。
 - [ ] **修復 AdminControllerTest**: 根據最新報告，`AdminControllerTest` 可能仍有 500 錯誤需修復。
 - [ ] **驗證 H2 穩定性**: 在 CI 環境下多次執行並發測試，確保無 Flaky Tests。
-
-### 2. 邊界條件與異常處理 (Edge Cases)
-- [ ] **無效輸入測試**: 增加更多對 Null 或格式錯誤輸入的測試 (e.g. 負數座標)。
-- [ ] **跨狀態操作**: 測試非法狀態操作 (e.g. 司機在 Busy 狀態下嘗試接新單)。
 
 ### 3. 測試覆蓋率分析 (Coverage - Issue #19)
 - [ ] **設定 JaCoCo**: 在 `pom.xml` 配置 JaCoCo Plugin。
