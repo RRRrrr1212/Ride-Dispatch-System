@@ -5,6 +5,7 @@ import com.uber.model.DriverStatus;
 import com.uber.model.VehicleType;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,15 +13,30 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 司機儲存庫 (In-Memory)
+ * 司機儲存庫 (In-Memory + JSON Persistent)
  */
 @Repository
 public class DriverRepository {
     
     private final Map<String, Driver> drivers = new ConcurrentHashMap<>();
+    private static final String FILE_NAME = "drivers.json";
+
+    public DriverRepository() {
+        loadData();
+    }
+
+    private void loadData() {
+        List<Driver> data = com.uber.util.JsonFileUtil.loadFromFile(FILE_NAME, new com.fasterxml.jackson.core.type.TypeReference<List<Driver>>() {});
+        data.forEach(item -> drivers.put(item.getDriverId(), item));
+    }
+
+    private void saveData() {
+        com.uber.util.JsonFileUtil.saveToFile(FILE_NAME, new ArrayList<>(drivers.values()));
+    }
     
     public Driver save(Driver driver) {
         drivers.put(driver.getDriverId(), driver);
+        saveData();
         return driver;
     }
     
@@ -48,6 +64,7 @@ public class DriverRepository {
     
     public void deleteAll() {
         drivers.clear();
+        saveData();
     }
     
     public int count() {

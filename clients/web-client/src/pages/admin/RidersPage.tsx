@@ -34,7 +34,6 @@ export function RidersPage() {
   
   // 新增乘客表單
   const [newRider, setNewRider] = useState({
-    riderId: '',
     name: '',
     phone: '',
   });
@@ -58,17 +57,23 @@ export function RidersPage() {
   }, []);
 
   const handleCreateRider = async () => {
-    if (!newRider.riderId || !newRider.name || !newRider.phone) {
+    if (!newRider.name || !newRider.phone) {
       alert('請填寫所有欄位');
       return;
     }
     
+    const riderId = `rider-${newRider.phone}`;
+
     try {
-      const response = await adminApi.createRider(newRider);
+      const response = await adminApi.createRider({
+        riderId,
+        name: newRider.name,
+        phone: newRider.phone,
+      });
       if (response.data.success) {
         alert('乘客建立成功');
         setOpenDialog(false);
-        setNewRider({ riderId: '', name: '', phone: '' });
+        setNewRider({ name: '', phone: '' });
         fetchRiders();
       }
     } catch (error: any) {
@@ -171,24 +176,17 @@ export function RidersPage() {
         <DialogContent sx={{ pt: 2 }}>
           <TextField
             fullWidth
-            label="乘客 ID (手機號碼)"
-            value={newRider.riderId}
-            onChange={(e) => setNewRider({ ...newRider, riderId: e.target.value })}
+            label="手機號碼"
+            value={newRider.phone}
+            onChange={(e) => setNewRider({ ...newRider, phone: e.target.value })}
             sx={{ mb: 2, mt: 1 }}
-            placeholder="例: rider-0912345678"
+            placeholder="例: 0912345678"
           />
           <TextField
             fullWidth
             label="姓名"
             value={newRider.name}
             onChange={(e) => setNewRider({ ...newRider, name: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="電話"
-            value={newRider.phone}
-            onChange={(e) => setNewRider({ ...newRider, phone: e.target.value })}
           />
         </DialogContent>
         <DialogActions>

@@ -21,12 +21,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
-  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { adminApi } from '../../api/admin.api';
 import { getVehicleTypeName } from '../../utils/vehicleTypes';
@@ -64,17 +62,20 @@ export function DriversPage() {
   }, []);
 
   const handleCreateDriver = async () => {
-    if (!newDriver.phone || !newDriver.name || !newDriver.vehiclePlate) {
+    if (!newDriver.phone || !newDriver.name) {
       alert('請填寫所有必填欄位');
       return;
     }
     
+    // 自動生成隨機車牌 (例如: ABC-1234)
+    const randomPlate = `${String.fromCharCode(65+Math.floor(Math.random()*26))}${String.fromCharCode(65+Math.floor(Math.random()*26))}${String.fromCharCode(65+Math.floor(Math.random()*26))}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     try {
       const response = await adminApi.createDriver({
         driverId: `driver-${newDriver.phone}`,
         name: newDriver.name,
         phone: newDriver.phone,
-        vehiclePlate: newDriver.vehiclePlate,
+        vehiclePlate: randomPlate,
         vehicleType: newDriver.vehicleType,
       });
       if (response.data.success) {
@@ -185,7 +186,7 @@ export function DriversPage() {
         <DialogContent sx={{ pt: 2 }}>
           <TextField
             fullWidth
-            label="手機號碼 *"
+            label="手機號碼"
             value={newDriver.phone}
             onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
             sx={{ mb: 2, mt: 1 }}
@@ -193,18 +194,10 @@ export function DriversPage() {
           />
           <TextField
             fullWidth
-            label="姓名 *"
+            label="姓名"
             value={newDriver.name}
             onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
             sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="車牌號碼 *"
-            value={newDriver.vehiclePlate}
-            onChange={(e) => setNewDriver({ ...newDriver, vehiclePlate: e.target.value })}
-            sx={{ mb: 2 }}
-            placeholder="例: ABC-1234"
           />
           <FormControl fullWidth>
             <InputLabel>車種 *</InputLabel>

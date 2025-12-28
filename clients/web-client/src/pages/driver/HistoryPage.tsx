@@ -46,10 +46,10 @@ export function HistoryPage() {
           );
           setOrders(myOrders);
           
-          // 計算總收入
+          // 計算總收入（使用司機實際收入）
           const total = myOrders.reduce((sum: number, order: Order) => 
-            sum + (order.fare || order.estimatedFare || 0), 0);
-          setTotalEarnings(total);
+            sum + (order.driverEarnings || order.fare || order.estimatedFare || 0), 0);
+          setTotalEarnings(Math.round(total));
           
           // 獲取地址
           fetchAddressesForOrders(myOrders);
@@ -68,8 +68,8 @@ export function HistoryPage() {
             setOrders(myOrders);
             
             const total = myOrders.reduce((sum: number, order: Order) => 
-              sum + (order.fare || order.estimatedFare || 0), 0);
-            setTotalEarnings(total);
+              sum + (order.driverEarnings || order.fare || order.estimatedFare || 0), 0);
+            setTotalEarnings(Math.round(total));
             
             fetchAddressesForOrders(myOrders);
           }
@@ -242,7 +242,7 @@ export function HistoryPage() {
                     variant="outlined"
                   />
                   <Typography color="success.main" fontWeight="bold" fontSize={18}>
-                    +${order.fare || order.estimatedFare || 0}
+                    +${order.driverEarnings || Math.round((order.fare || order.estimatedFare || 0) * 0.8)}
                   </Typography>
                 </Box>
               </Box>

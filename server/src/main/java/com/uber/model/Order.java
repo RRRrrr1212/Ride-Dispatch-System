@@ -39,4 +39,10 @@ public class Order {
     
     private String cancelledBy;
     private Double cancelFee;
+    
+    // 司機實際收入（扣除平台抽成後）
+    private Double driverEarnings;
+    
+    // 共享路徑資料 (JSON 格式，例如 [[lat,lng],[lat,lng],...])
+    private String routePathJson;
 }

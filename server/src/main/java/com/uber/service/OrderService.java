@@ -199,10 +199,14 @@ public class OrderService {
                 duration
         );
         
+        // 計算司機收入（扣除 20% 平台抽成）
+        double driverEarnings = Math.round(fare * 0.8 * 100.0) / 100.0;
+        
         order.setStatus(OrderStatus.COMPLETED);
         order.setCompletedAt(endTime);
         order.setDuration(duration);
         order.setActualFare(fare);
+        order.setDriverEarnings(driverEarnings);
         orderRepository.save(order);
         
         // 釋放司機
@@ -215,7 +219,7 @@ public class OrderService {
         auditService.logSuccess(orderId, "COMPLETE", "DRIVER", 
                 driverId, "ONGOING", "COMPLETED");
         
-        log.info("Trip completed for order {}, fare: {}", orderId, fare);
+        log.info("Trip completed for order {}, fare: {}, driver earnings: {}", orderId, fare, driverEarnings);
         return order;
     }
     
@@ -286,5 +290,107 @@ public class OrderService {
      */
     public java.util.List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+    
+    /**
+     * 更新訂單 (用於更新路徑等資料)
+     */
+    public void updateOrder(Order order) {
+        orderRepository.save(order);
+    }
+    
+    /**
+     * 清理超時訂單 (由排程任務呼叫)
+     * 
+     * 規則：
+     * - PENDING 超過 10 分鐘 -> 自動取消
+     * - ACCEPTED 超過 15 分鐘沒開始 -> 自動取消
+     * - ONGOING 超過 60 分鐘沒完成 -> 自動取消
+     * 
+     * @return 被清理的訂單數量
+     */
+    public int cleanupStaleOrders() {
+        Instant now = Instant.now();
+        int cleanedCount = 0;
+        
+        for (Order order : orderRepository.findAll()) {
+            boolean shouldCancel = false;
+            String reason = "";
+            
+            switch (order.getStatus()) {
+                case PENDING:
+                    // 10 分鐘沒被接單
+                    if (order.getCreatedAt() != null && 
+                        order.getCreatedAt().plusSeconds(10 * 60).isBefore(now)) {
+                        shouldCancel = true;
+                        reason = "系統自動取消：超過10分鐘未有司機接單";
+                    }
+                    break;
+                    
+                case ACCEPTED:
+                    // 15 分鐘沒開始行程
+                    if (order.getAcceptedAt() != null && 
+                        order.getAcceptedAt().plusSeconds(15 * 60).isBefore(now)) {
+                        shouldCancel = true;
+                        reason = "系統自動取消：司機接單後超過15分鐘未開始行程";
+                        
+                        // 釋放司機
+                        releaseDriver(order.getDriverId());
+                    }
+                    break;
+                    
+                case ONGOING:
+                    // 60 分鐘沒完成 (異常長的行程)
+                    if (order.getStartedAt() != null && 
+                        order.getStartedAt().plusSeconds(60 * 60).isBefore(now)) {
+                        shouldCancel = true;
+                        reason = "系統自動取消：行程超過60分鐘未完成，可能異常";
+                        
+                        // 釋放司機
+                        releaseDriver(order.getDriverId());
+                    }
+                    break;
+                    
+                default:
+                    // COMPLETED 或 CANCELLED 不處理
+                    break;
+            }
+            
+            if (shouldCancel) {
+                order.setStatus(OrderStatus.CANCELLED);
+                order.setCancelledAt(now);
+                order.setCancelledBy("SYSTEM");
+                order.setCancelFee(0.0); // 系統取消不收費
+                orderRepository.save(order);
+                
+                log.info("自動取消超時訂單: {} - {}", order.getOrderId(), reason);
+                auditService.logSuccess(order.getOrderId(), "AUTO_CANCEL", "SYSTEM", "SYSTEM", order.getStatus().name(), "CANCELLED");
+                cleanedCount++;
+            }
+        }
+        
+        if (cleanedCount > 0) {
+            log.info("本次清理了 {} 筆超時訂單", cleanedCount);
+        }
+        
+        return cleanedCount;
+    }
+    
+    /**
+     * 釋放司機 (取消訂單時呼叫)
+     */
+    private void releaseDriver(String driverId) {
+        if (driverId == null) return;
+        
+        try {
+            Driver driver = driverRepository.findById(driverId).orElse(null);
+            if (driver != null) {
+                driver.setStatus(DriverStatus.ONLINE);
+                driver.setCurrentOrderId(null);
+                driverRepository.save(driver);
+            }
+        } catch (Exception e) {
+            log.warn("釋放司機失敗: {}", driverId, e);
+        }
     }
 }

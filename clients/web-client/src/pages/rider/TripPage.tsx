@@ -51,6 +51,31 @@ export function TripPage() {
     }
   );
 
+  // 計算真實 ETA (Haversine)
+  const getEtaInfo = () => {
+    if (!driverPosition || !dropoffLocation) return null;
+
+    const R = 6371e3; // metres
+    const φ1 = driverPosition.lat * Math.PI/180;
+    const φ2 = dropoffLocation.lat * Math.PI/180;
+    const Δφ = (dropoffLocation.lat-driverPosition.lat) * Math.PI/180;
+    const Δλ = (dropoffLocation.lng-driverPosition.lng) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dist = R * c; // meters
+
+    // 如果距離異常大 (> 50km)，可能是位置初始化問題
+    if (dist > 50000) return null;
+
+    const mins = Math.ceil((dist / 1000) / 30 * 60); // 30km/h
+    return { mins, dist: Math.round(dist) };
+  };
+
+  const eta = getEtaInfo();
+
   // Polling
   useEffect(() => {
     if (!orderId) return;
@@ -74,13 +99,30 @@ export function TripPage() {
             if (!isNaN(lat) && !isNaN(lng)) {
               setDriverPosition({ lat, lng });
             }
+          } else if (!driverPosition && pickupLocation) {
+            // Fallback: 如果後端未回報位置，用上車點附近的估計位置
+            setDriverPosition({
+              lat: pickupLocation.lat + 0.003, // 約 333m 北
+              lng: pickupLocation.lng + 0.003  // 約 300m 東
+            });
           }
           
-          // 2. 如果沒有真實位置且尚未規劃路徑，則規劃一條路徑用於模擬
-          if (!tripPath && pickupLocation && dropoffLocation) {
+          // 2. 優先使用後端共享的路徑（司機端上傳的）
+          if (orderData.routePathJson) {
+             // 後端有路徑，總是使用（以保持與司機端同步）
              try {
-                // 如果是 ONGOING，路徑應該是從 司機當前位置/上車點 -> 下車點
-                // 這裡簡化為 上車點 -> 下車點
+                const parsed = JSON.parse(orderData.routePathJson) as number[][];
+                const coords = parsed.map(([lat, lng]) => ({ lat, lng }));
+                // 只有路徑真的不同時才更新，避免無限 re-render
+                if (!tripPath || coords.length !== tripPath.length) {
+                   setTripPath(coords);
+                }
+             } catch (e) {
+                console.warn('解析路徑失敗', e);
+             }
+          } else if (!tripPath && pickupLocation && dropoffLocation) {
+             // 後端沒有路徑且目前沒路徑，自己計算作為備案
+             try {
                 const route = await getRouteWithCache(pickupLocation, dropoffLocation);
                 setTripPath(route.coordinates);
              } catch (e) {
@@ -96,8 +138,11 @@ export function TripPage() {
         }
       } catch (error: any) {
         console.error('查詢失敗:', error);
-         if (error.response?.status === 404) {
+         if (error.response?.status === 404 || error.response?.status === 400) {
            // 訂單不存在
+           console.warn('訂單不存在，返回首頁');
+           sessionStorage.removeItem('activeOrderId');
+           navigate('/rider/home');
         }
       }
     };
@@ -148,9 +193,10 @@ export function TripPage() {
           gap: 1,
           boxShadow: 4,
           backdropFilter: 'blur(8px)',
+          
         }}>
            <Typography variant="body2" fontWeight="bold">
-             {Math.round((1 - progress) * 10)} 分鐘後到達
+             {eta ? `${eta.mins} 分鐘後到達` : '計算中...'}
            </Typography>
         </Paper>
       </Box>
@@ -177,7 +223,9 @@ export function TripPage() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                    <Typography variant="h5" color="white" fontWeight="bold">行程進行中</Typography>
-                   <Typography variant="body2" color="grey.400">預計 10 分鐘後到達</Typography>
+                   <Typography variant="body2" color="grey.400">
+                      {eta ? `預計 ${eta.mins} 分鐘後到達` : '正規劃路線...'}
+                   </Typography>
                 </Box>
                 <Avatar sx={{ width: 56, height: 56, bgcolor: '#333' }}>
                   {order?.driverName?.[0] || 'D'}

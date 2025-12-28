@@ -15,9 +15,24 @@ import java.util.stream.Collectors;
 public class AuditLogRepository {
     
     private final List<AuditLog> logs = new CopyOnWriteArrayList<>();
+    private static final String FILE_NAME = "audit_logs.json";
+
+    public AuditLogRepository() {
+        loadData();
+    }
+
+    private void loadData() {
+        List<AuditLog> data = com.uber.util.JsonFileUtil.loadFromFile(FILE_NAME, new com.fasterxml.jackson.core.type.TypeReference<List<AuditLog>>() {});
+        logs.addAll(data);
+    }
+
+    private synchronized void saveData() {
+        com.uber.util.JsonFileUtil.saveToFile(FILE_NAME, new ArrayList<>(logs));
+    }
     
     public AuditLog save(AuditLog auditLog) {
         logs.add(auditLog);
+        saveData();
         return auditLog;
     }
     
@@ -62,6 +77,7 @@ public class AuditLogRepository {
     
     public void deleteAll() {
         logs.clear();
+        saveData();
     }
     
     public int count() {

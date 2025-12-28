@@ -217,7 +217,12 @@ export function HistoryPage() {
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Chip 
-                    label={order.vehicleType || 'STANDARD'} 
+                    label={
+                      order.vehicleType === 'STANDARD' ? '標準' :
+                      order.vehicleType === 'PREMIUM' ? '尊榮' :
+                      order.vehicleType === 'XL' ? '大型車' :
+                      order.vehicleType || '標準'
+                    } 
                     size="small" 
                     variant="outlined"
                   />

@@ -92,7 +92,7 @@ export function OrdersPage() {
                   <TableCell>{order.driverId || '-'}</TableCell>
                   <TableCell><StatusChip status={order.status} /></TableCell>
                   <TableCell>{getVehicleTypeName(order.vehicleType)}</TableCell>
-                  <TableCell>${order.fare || order.estimatedFare || '-'}</TableCell>
+                  <TableCell>${(order.actualFare || order.fare || order.estimatedFare) ? Number(order.actualFare || order.fare || order.estimatedFare).toFixed(2) : '-'}</TableCell>
                   <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
                 </TableRow>
               ))}

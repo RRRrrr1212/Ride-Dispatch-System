@@ -254,8 +254,22 @@ export function TripPage() {
       getRouteWithCache(driverInitialLocation, pickupLocation)
         .then(route => {
           setCurrentPath(route.coordinates);
+          // 上傳路徑到後端，讓乘客端共享
+          if (orderId) {
+            const routeJson = JSON.stringify(route.coordinates.map(c => [c.lat, c.lng]));
+            orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+          }
         })
-        .catch(err => console.error('Path error', err));
+        .catch(err => {
+          console.warn('Path error (fallback to straight line)', err);
+          const fallbackPath = [driverInitialLocation, pickupLocation];
+          setCurrentPath(fallbackPath);
+          // 即使是 fallback 也上傳，確保一致性
+          if (orderId) {
+            const routeJson = JSON.stringify(fallbackPath.map(c => [c.lat, c.lng]));
+            orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+          }
+        });
     }
   }, [order?.status, pickupLocation, driverInitialLocation]);
 
@@ -272,8 +286,21 @@ export function TripPage() {
         getRouteWithCache(pickupLocation, dropoffLocation)
           .then(route => {
              setCurrentPath(route.coordinates);
+             // 上傳路徑到後端
+             if (orderId) {
+               const routeJson = JSON.stringify(route.coordinates.map(c => [c.lat, c.lng]));
+               orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+             }
           })
-          .catch(err => console.error('Path error', err));
+          .catch(err => {
+             console.warn('Path error (fallback to straight line)', err);
+             const fallbackPath = [pickupLocation, dropoffLocation];
+             setCurrentPath(fallbackPath);
+             if (orderId) {
+               const routeJson = JSON.stringify(fallbackPath.map(c => [c.lat, c.lng]));
+               orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+             }
+          });
     }
   }, [order?.status, pickupLocation, dropoffLocation]); // removed orderId
 
@@ -335,32 +362,39 @@ export function TripPage() {
   // 地圖中心跟隨司機
   const mapCenter = animatedDriverPos || driverInitialLocation;
 
-  // 計算地圖邊界
-  const mapBounds = useMemo(() => {
-    // 如果手動控制縮放，就不回傳邊界，讓地圖保持當前視角
-    if (manualFitBounds) return null;
+  // 控制是否已經完成首次 fit bounds
+  const [hasInitialFit, setHasInitialFit] = useState(false);
 
-    // 收集所有關鍵點：司機位置、上車點、下車點
-    const points: MapLocation[] = [];
+  // 計算地圖邊界 - 只在首次載入或用戶點擊全覽按鈕時生效
+  const mapBounds = useMemo(() => {
+    // 如果開啟手動模式，不自動 fit
+    if (manualFitBounds) return null;
     
-    // 輔助檢查函數
+    // 如果已經完成首次 fit，也不自動 fit (除非用戶按全覽按鈕)
+    if (hasInitialFit) return null;
+
+    // 收集所有關鍵點：上車點、下車點 (不包含動態的司機位置)
+    const points: MapLocation[] = [];
     const isValid = (loc: MapLocation | null) => loc && typeof loc.lat === 'number' && typeof loc.lng === 'number';
 
-    const driverPos = animatedDriverPos || driverInitialLocation;
-    if (isValid(driverPos)) points.push(driverPos!);
     if (isValid(pickupLocation)) points.push(pickupLocation!);
     if (isValid(dropoffLocation)) points.push(dropoffLocation!);
+    if (isValid(driverInitialLocation)) points.push(driverInitialLocation);
 
     // 只要有兩個以上的點，就進行自動縮放
     if (points.length >= 2) {
+      // 標記首次 fit 完成
+      setTimeout(() => setHasInitialFit(true), 500);
       return points;
     }
 
     return null;
-  }, [pickupLocation, dropoffLocation, animatedDriverPos, driverInitialLocation, manualFitBounds]);
+  }, [pickupLocation, dropoffLocation, driverInitialLocation, manualFitBounds, hasInitialFit]);
 
   const handleFitBounds = () => {
-    setManualFitBounds(false); // 啟用自動邊界 (LeafletMap 會偵測到 bounds 變化或重渲染而 fit)
+    // 重置兩個狀態，觸發重新 fit
+    setHasInitialFit(false);
+    setManualFitBounds(false);
   };
 
   if (loading) {

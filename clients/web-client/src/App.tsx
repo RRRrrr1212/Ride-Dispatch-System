@@ -26,6 +26,7 @@ import { DashboardPage as DriverDashboard } from './pages/driver/DashboardPage';
 import { OrderDetailPage } from './pages/driver/OrderDetailPage';
 import { TripPage as DriverTrip } from './pages/driver/TripPage';
 import { HistoryPage as DriverHistory } from './pages/driver/HistoryPage';
+import { EarningsPage as DriverEarnings } from './pages/driver/EarningsPage';
 import { ProfilePage as DriverProfile } from './pages/driver/ProfilePage';
 
 // Admin Pages
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
       { path: 'order/:orderId', element: <OrderDetailPage /> },
       { path: 'trip/:orderId', element: <DriverTrip /> },
       { path: 'history', element: <DriverHistory /> },
+      { path: 'earnings', element: <DriverEarnings /> },
       { path: 'profile', element: <DriverProfile /> },
     ],
   },

@@ -168,6 +168,27 @@ public class OrderController {
     }
     
     /**
+     * 更新訂單路徑 (前端上傳計算好的路徑，實現司機/乘客共享)
+     * PUT /api/orders/{orderId}/route
+     */
+    @PutMapping("/{orderId}/route")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateRoute(
+            @PathVariable String orderId,
+            @RequestBody Map<String, String> request) {
+        String routePathJson = request.get("routePathJson");
+        
+        Order order = orderService.getOrder(orderId);
+        order.setRoutePathJson(routePathJson);
+        orderService.updateOrder(order); // need to add this method
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("orderId", order.getOrderId());
+        response.put("routePathJson", order.getRoutePathJson());
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
      * 建構訂單回應資料
      */
     private Map<String, Object> buildOrderResponse(Order order) {
@@ -208,11 +229,17 @@ public class OrderController {
             response.put("completedAt", order.getCompletedAt());
             response.put("fare", order.getActualFare());
             response.put("duration", order.getDuration());
+            response.put("driverEarnings", order.getDriverEarnings());
         }
         if (order.getStatus() == OrderStatus.CANCELLED) {
             response.put("cancelledAt", order.getCancelledAt());
             response.put("cancelledBy", order.getCancelledBy());
             response.put("cancelFee", order.getCancelFee());
+        }
+
+        // 路徑資料
+        if (order.getRoutePathJson() != null && !order.getRoutePathJson().isEmpty()) {
+            response.put("routePathJson", order.getRoutePathJson());
         }
         
         return response;

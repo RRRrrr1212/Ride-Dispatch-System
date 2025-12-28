@@ -16,9 +16,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RiderRepository {
     
     private final Map<String, Rider> riders = new ConcurrentHashMap<>();
+    private static final String FILE_NAME = "riders.json";
+    
+    public RiderRepository() {
+        loadData();
+    }
+
+    private void loadData() {
+        List<Rider> data = com.uber.util.JsonFileUtil.loadFromFile(FILE_NAME, new com.fasterxml.jackson.core.type.TypeReference<List<Rider>>() {});
+        data.forEach(item -> riders.put(item.getRiderId(), item));
+    }
+
+    private void saveData() {
+        com.uber.util.JsonFileUtil.saveToFile(FILE_NAME, new ArrayList<>(riders.values()));
+    }
     
     public Rider save(Rider rider) {
         riders.put(rider.getRiderId(), rider);
+        saveData();
         return rider;
     }
     
@@ -32,10 +47,12 @@ public class RiderRepository {
     
     public void deleteById(String riderId) {
         riders.remove(riderId);
+        saveData();
     }
     
     public void deleteAll() {
         riders.clear();
+        saveData();
     }
     
     public boolean existsById(String riderId) {
