@@ -68,7 +68,7 @@ export function TripPage() {
     {
       label: '收入',
       icon: <AttachMoneyIcon fontSize="small" />,
-      onClick: () => {},
+      onClick: () => navigate('/driver/earnings'),
     },
     {
       label: '登出',
@@ -140,6 +140,7 @@ export function TripPage() {
 
   const [simulationStartIndex, setSimulationStartIndex] = useState(0); 
   const [manualFitBounds, setManualFitBounds] = useState(false); // 控制是否只使用手動縮放
+  const [zoomToArrival, setZoomToArrival] = useState(false); // 到達時放大視角
 
   const hasStartedToPickupRef = useRef(false);
   const hasStartedToDropoffRef = useRef(false);
@@ -154,19 +155,19 @@ export function TripPage() {
     if (stored) {
       const startTime = parseInt(stored, 10);
       const elapsedSec = (Date.now() - startTime) / 1000;
-      // 速度為 1 點/秒 (根據 useAnimatedPosition 設定)
-      const estimatedIndex = Math.floor(elapsedSec * 1); 
+      // 速度為 30 點/秒
+      const estimatedIndex = Math.floor(elapsedSec * 30); 
       setSimulationStartIndex(estimatedIndex);
     } else {
       localStorage.setItem(key, Date.now().toString());
     }
   }, [orderId]);
 
-  // 使用動畫 Hook - 降低速度 (模擬 30km/h 移動)
+  // 使用動畫 Hook - 2倍速 (模擬 60km/h 移動)
   const { position: animatedDriverPos } = useAnimatedPosition(
     currentPath,
     {
-      speed: 1, // 降低速度，確保移動過程清晰可見 (大於 15s)
+      speed: 6, // 速度同步為 6
       enabled: true,
       initialIndex: simulationStartIndex, // 傳入初始索引
     }
@@ -192,6 +193,17 @@ export function TripPage() {
   const [etaInfo, setEtaInfo] = useState({ distance: 0, minutes: 0 });
   const [canInteract, setCanInteract] = useState(false); // 是否在可操作範圍內 (150m)
 
+  // 當訂單狀態變化時，重置到達相關狀態
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (prevStatusRef.current && prevStatusRef.current !== order?.status) {
+      // 狀態變化了，重置到達相關狀態
+      setCanInteract(false);
+      setZoomToArrival(false);
+    }
+    prevStatusRef.current = order?.status;
+  }, [order?.status]);
+
   useEffect(() => {
     if (!animatedDriverPos) return;
 
@@ -201,11 +213,22 @@ export function TripPage() {
 
     if (target) {
       const dist = getDistance(animatedDriverPos, target);
+      // add 1.3 multiplier to simulate road distance vs straight line
+      const estimatedDist = dist * 1.3;
       setEtaInfo({
-        distance: Math.round(dist),
-        minutes: Math.ceil((dist / 1000) / 30 * 60) // 假設時速 30km/h
+        distance: Math.round(dist), // Keep straight line distance for display or update if needed
+        // 統一使用 45km/h (750m/min) 計算
+        minutes: Math.ceil((estimatedDist / 1000) / 45 * 60)
       });
-      setCanInteract(dist <= 150); 
+      // Relaxed arrival detection: radius increased to 100m
+      const isArriving = dist <= 100;
+      setCanInteract(isArriving);
+      
+      // 到達時自動放大到目標位置
+      if (isArriving && !zoomToArrival) {
+        setZoomToArrival(true);
+        setManualFitBounds(true); // 停止自動 fit bounds
+      }
     }
   }, [animatedDriverPos, order?.status, pickupLocation, dropoffLocation]);
 
@@ -228,7 +251,7 @@ export function TripPage() {
         driverApi.updateLocation(driver.driverId, pos.lat, pos.lng)
           .catch(err => console.error('位置回報失敗', err));
       }
-    }, 1000); // 每秒上傳一次
+    }, 500); // 每0.5秒上傳一次 (提升同步流暢度)
 
     return () => clearInterval(timer);
   }, [driver]);
@@ -394,14 +417,33 @@ export function TripPage() {
 
     setActionLoading(true);
     try {
+      // 強制將司機位置更新到上車點（確保位置一致）
+      if (pickupLocation) {
+        await driverApi.updateLocation(driver.driverId, pickupLocation.lat, pickupLocation.lng)
+          .catch(err => console.warn('更新位置失敗', err));
+      }
+
       const response = await orderApi.start(orderId, driver.driverId);
       if (response.data.success && response.data.data) {
+        // 1. 更新訂單狀態 (觸發 ONGOING 狀態)
         setOrder(response.data.data);
-        // 清除舊的動畫狀態，準備下一段
+        
+        // 2. 重置動畫相關狀態 (不需要 reload)
         const key = `trip_sim_start_${orderId}`;
         localStorage.setItem(key, Date.now().toString());
-        // 重新整理頁面以重置狀態
-        window.location.reload(); 
+        setSimulationStartIndex(0);
+        
+        // 3. 清除當前路徑，讓 useEffect 重新計算 ONGOING 路徑
+        setCurrentPath(null);
+        
+        // 4. 重置 ref，允許重新計算路徑
+        hasStartedToDropoffRef.current = false;
+        
+        // 5. 重置地圖視角，觸發縮放到顯示上下車兩點
+        setHasInitialFit(false);
+        setManualFitBounds(false);
+        setZoomToArrival(false);
+        setCanInteract(false); // 重置互動狀態，等新路徑動畫開始
       }
     } catch (error) {
       alert('開始行程失敗');
@@ -449,21 +491,37 @@ export function TripPage() {
   // 控制是否已經完成首次 fit bounds
   const [hasInitialFit, setHasInitialFit] = useState(false);
 
-  // 計算地圖邊界 - 只在首次載入或用戶點擊全覽按鈕時生效
+  // 計算地圖邊界 - 根據訂單狀態動態調整
   const mapBounds = useMemo(() => {
     // 如果開啟手動模式，不自動 fit
     if (manualFitBounds) return null;
     
     // 如果已經完成首次 fit，也不自動 fit (除非用戶按全覽按鈕)
     if (hasInitialFit) return null;
+    
+    // 到達時放大視角，不使用 bounds
+    if (zoomToArrival) return null;
 
-    // 收集所有關鍵點：上車點、下車點 (不包含動態的司機位置)
     const points: MapLocation[] = [];
     const isValid = (loc: MapLocation | null) => loc && typeof loc.lat === 'number' && typeof loc.lng === 'number';
 
-    if (isValid(pickupLocation)) points.push(pickupLocation!);
-    if (isValid(dropoffLocation)) points.push(dropoffLocation!);
-    if (isValid(driverInitialLocation)) points.push(driverInitialLocation);
+    // ACCEPTED 狀態：顯示司機位置和上車點
+    if (order?.status === 'ACCEPTED') {
+      if (isValid(driverInitialLocation)) points.push(driverInitialLocation);
+      if (isValid(pickupLocation)) points.push(pickupLocation!);
+    }
+    // ONGOING 狀態：顯示上車點和下車點，以及司機當前位置
+    else if (order?.status === 'ONGOING') {
+      if (isValid(pickupLocation)) points.push(pickupLocation!);
+      if (isValid(dropoffLocation)) points.push(dropoffLocation!);
+      if (isValid(animatedDriverPos)) points.push(animatedDriverPos!);
+    }
+    // 預設：收集所有點
+    else {
+      if (isValid(pickupLocation)) points.push(pickupLocation!);
+      if (isValid(dropoffLocation)) points.push(dropoffLocation!);
+      if (isValid(driverInitialLocation)) points.push(driverInitialLocation);
+    }
 
     // 只要有兩個以上的點，就進行自動縮放
     if (points.length >= 2) {
@@ -473,7 +531,7 @@ export function TripPage() {
     }
 
     return null;
-  }, [pickupLocation, dropoffLocation, driverInitialLocation, manualFitBounds, hasInitialFit]);
+  }, [order?.status, pickupLocation, dropoffLocation, driverInitialLocation, manualFitBounds, hasInitialFit, zoomToArrival]);
 
   const handleFitBounds = () => {
     // 重置兩個狀態，觸發重新 fit
@@ -493,12 +551,12 @@ export function TripPage() {
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
       {/* 全屏地圖 */}
       <LeafletMap
-        center={mapCenter}
-        zoom={16}
+        center={zoomToArrival ? (order?.status === 'ONGOING' ? dropoffLocation : pickupLocation) || mapCenter : mapCenter}
+        zoom={zoomToArrival ? 18 : 16}
         markers={markers}
         routePath={currentPath || undefined}
         driverPosition={animatedDriverPos}
-        bounds={mapBounds}
+        bounds={zoomToArrival ? undefined : mapBounds}
         bottomOffset={300}        
         onCenterChange={handleMapInteraction}
         onMapClick={handleMapInteraction}
@@ -509,7 +567,7 @@ export function TripPage() {
       <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 1200 }}>
         <AppMenu
           userName={driver?.name || driver?.driverId || '司機'}
-          userRating="5.0 ★"
+          userBadge={driver?.vehicleType === 'STANDARD' ? '菁英' : driver?.vehicleType === 'PREMIUM' ? '尊榮' : driver?.vehicleType === 'XL' ? '大型' : undefined}
           menuItems={menuItems}
         />
       </Box>
@@ -607,15 +665,31 @@ export function TripPage() {
             </Box>
           </Box>
 
-          {/* 乘客資訊 */}
+          {/* 乘客資訊 - UI/UX 優化 */}
           <Card sx={{ mb: 2, bgcolor: '#2a2a2a', color: 'white' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
-               <Box sx={{ width: 48, height: 48, borderRadius: '50%', bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="h6" color="white">{order?.passengerId?.charAt(0) || 'U'}</Typography>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                 <Box sx={{ width: 48, height: 48, borderRadius: '50%', bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography variant="h6" color="white">{order?.riderName?.charAt(0) || 'U'}</Typography>
+                 </Box>
+                 <Box>
+                   <Typography variant="subtitle1" fontWeight="bold">{order?.riderName || '乘客'}</Typography>
+                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.25 }}>
+                     <Box sx={{ bgcolor: '#444', px: 0.75, py: 0.125, borderRadius: 0.5 }}>
+                       <Typography variant="caption" color="grey.300" sx={{ fontSize: '0.65rem' }}>
+                         {order?.vehicleType === 'STANDARD' ? '菁英' : order?.vehicleType === 'PREMIUM' ? '尊榮' : order?.vehicleType === 'XL' ? '大型' : order?.vehicleType}
+                       </Typography>
+                     </Box>
+                     <Typography variant="caption" color="grey.500">
+                       {order?.passengerId?.replace('rider-', '') || '電話未知'}
+                     </Typography>
+                   </Box>
+                 </Box>
                </Box>
-               <Box>
-                 <Typography variant="subtitle1" fontWeight="bold">{order?.passengerId}</Typography>
-                 <Typography variant="caption" color="grey.400">乘客</Typography>
+               <Box sx={{ textAlign: 'right' }}>
+                 <Typography variant="h5" color="success.main" fontWeight="bold">
+                   ${Math.round(order?.estimatedFare || order?.fare || 0)}
+                 </Typography>
                </Box>
             </CardContent>
           </Card>

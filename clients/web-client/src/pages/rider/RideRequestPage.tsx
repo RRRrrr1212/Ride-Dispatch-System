@@ -96,6 +96,14 @@ export function RideRequestPage() {
   const handleRequestRide = async () => {
     if (!user || !pickupLocation || !dropoffLocation) return;
 
+    if (!user?.id) {
+      console.error('用戶 ID 遺失，無法叫車', user);
+      alert('用戶資訊不完整，請重新登入');
+      return;
+    }
+    
+    console.log('Sending create order request with passengerId:', user.id);
+
     setLoading(true);
     try {
       const response = await orderApi.create({

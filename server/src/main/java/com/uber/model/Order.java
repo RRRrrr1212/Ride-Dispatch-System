@@ -16,11 +16,28 @@ import java.time.Instant;
 @AllArgsConstructor
 public class Order {
     
+    @com.fasterxml.jackson.annotation.JsonProperty("orderId")
     private String orderId;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("passengerId")
     private String passengerId;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("riderName")
+    private String riderName; // 乘客姓名 (Transient)
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("driverId")
     private String driverId;
     
+    @com.fasterxml.jackson.annotation.JsonProperty("driverName")
+    private String driverName; // 司機姓名 (Transient)
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("vehiclePlate")
+    private String vehiclePlate; // 車牌 (Transient)
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("status")
     private OrderStatus status;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("vehicleType")
     private VehicleType vehicleType;
     
     private Location pickupLocation;

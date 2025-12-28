@@ -1,17 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Button,
-  Avatar,
   Paper,
   LinearProgress,
 } from '@mui/material';
-import {
-  Phone as PhoneIcon,
-  Message as MessageIcon,
-} from '@mui/icons-material';
+
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
 import { orderApi } from '../../api/order.api';
@@ -33,8 +29,8 @@ export function TripPage() {
   
   // 地圖控制
   const [autoCenter, setAutoCenter] = useState(true);
+  const [zoomToArrival, setZoomToArrival] = useState(false); // 到達時放大視角
   const handleMapInteraction = () => setAutoCenter(false);
-  const handleRecenter = () => setAutoCenter(true);
 
   // 地圖相關狀態
   const savedPickup = sessionStorage.getItem('currentOrderPickup');
@@ -52,7 +48,7 @@ export function TripPage() {
   const { position: animatedCarPos, progress } = useAnimatedPosition(
     tripPath,
     {
-      speed: 15, // 行駛速度較快
+      speed: 6, // 行駛速度 (6 點/秒)
       enabled: true,
       onComplete: () => console.log('模擬車輛到達'),
     }
@@ -77,11 +73,21 @@ export function TripPage() {
     // 如果距離異常大 (> 50km)，可能是位置初始化問題
     if (dist > 50000) return null;
 
-    const mins = Math.ceil((dist / 1000) / 30 * 60); // 30km/h
+    // Add 1.3 multiplier to simulate real road distance
+    const estimatedDist = dist * 1.3;
+    // 調整 ETA計算速度為 45km/h
+    const mins = Math.ceil((estimatedDist / 1000) / 45 * 60); // 45km/h
     return { mins, dist: Math.round(dist) };
   };
 
   const eta = getEtaInfo();
+  
+  // 到達時自動放大到目標位置
+  useEffect(() => {
+    if (eta && eta.dist <= 100 && !zoomToArrival) {
+      setZoomToArrival(true);
+    }
+  }, [eta, zoomToArrival]);
 
   // Polling
   useEffect(() => {
@@ -130,7 +136,7 @@ export function TripPage() {
                     Math.pow((pos.lat - prev.lat) * 111000, 2) +
                     Math.pow((pos.lng - prev.lng) * 111000 * Math.cos(pos.lat * Math.PI / 180), 2)
                   );
-                  return dist < 15; // 15 公尺
+                  return dist < 0.5; // 移動小於 0.5 公尺視為停止
                 });
                 setDriverStopped(isStationary);
               }
@@ -186,7 +192,7 @@ export function TripPage() {
     };
 
     poll();
-    const timer = setInterval(poll, 1000); // 每秒更新一次
+    const timer = setInterval(poll, 500); // 每0.5秒更新一次
     return () => clearInterval(timer);
   }, [orderId, navigate, pickupLocation, dropoffLocation, tripPath]);
 
@@ -202,14 +208,24 @@ export function TripPage() {
   if (pickupLocation) markers.push({ id: 'pickup', position: pickupLocation, type: 'pickup', label: '上車' });
   if (dropoffLocation) markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車' });
 
+  // 計算初始 bounds（顯示上下車兩點）
+  const mapBounds = useMemo(() => {
+    if (zoomToArrival) return undefined; // 到達時不使用 bounds
+    const points: MapLocation[] = [];
+    if (pickupLocation) points.push(pickupLocation);
+    if (dropoffLocation) points.push(dropoffLocation);
+    return points.length >= 2 ? points : undefined;
+  }, [pickupLocation, dropoffLocation, zoomToArrival]);
+
   return (
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
       <LeafletMap
-        center={currentCarPos || { lat: 24.1618, lng: 120.6469 }}
-        zoom={16}
+        center={zoomToArrival ? (dropoffLocation || currentCarPos || { lat: 24.1618, lng: 120.6469 }) : (currentCarPos || { lat: 24.1618, lng: 120.6469 })}
+        zoom={zoomToArrival ? 18 : 15}
         markers={markers}
         routePath={tripPath || undefined}
         driverPosition={currentCarPos}
+        bounds={mapBounds}
         onMapClick={handleMapInteraction}
         onCenterChange={handleMapInteraction}
         disableAutoCenter={!autoCenter}
@@ -237,10 +253,10 @@ export function TripPage() {
           
         }}>
            <Typography variant="body2" fontWeight="bold">
-             {driverStopped ? (
-               <span style={{ color: '#4ade80' }}>司機已到達</span>
+             {eta && eta.dist <= 100 ? (
+               <span style={{ color: '#4ade80' }}>✓ 已到達</span>
              ) : eta ? (
-               `${eta.mins} 分鐘後到達`
+               <>{eta.dist > 1000 ? `${(eta.dist/1000).toFixed(1)} km` : `${eta.dist} m`} • {eta.mins} 分鐘</>
              ) : (
                '計算中...'
              )}
@@ -267,56 +283,73 @@ export function TripPage() {
          />
          
          <Box sx={{ p: 3 }}>
+            {/* 頂部：ETA + 司機資訊 (與 WaitingPage 相同概念) */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Box>
-                   <Typography variant="h5" color="white" fontWeight="bold">
-                     {driverStopped ? '已到達目的地' : '行程進行中'}
-                   </Typography>
-                   <Typography variant="body2" color="grey.400">
-                     {driverStopped ? (
-                       <span style={{ color: '#4ade80' }}>請下車，祝您旅途愉快！</span>
-                     ) : eta ? (
-                       `預計 ${eta.mins} 分鐘後到達`
-                     ) : (
-                       '正規劃路線...'
-                     )}
-                   </Typography>
+              <Box>
+                <Typography variant="caption" color="grey.500">
+                  {eta && eta.dist <= 100 ? '行程狀態' : '預計還有'}
+                </Typography>
+                <Typography variant="h3" fontWeight="bold" color="white">
+                  {eta && eta.dist <= 100 ? (
+                    <span style={{ color: '#4ade80' }}>已到達</span>
+                  ) : eta ? (
+                    <>{eta.mins} <span style={{ fontSize: '1rem' }}>分鐘</span></>
+                  ) : (
+                    <span style={{ fontSize: '1.5rem' }}>計算中...</span>
+                  )}
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: 'right' }}>
+                {/* 司機名字 - 主要資訊 */}
+                <Typography variant="h5" color="white" fontWeight="bold">
+                  {order?.driverName || '司機'}
+                </Typography>
+                {/* 車種 + 車牌 - 次要資訊 */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'flex-end',
+                  gap: 1,
+                  mt: 0.5 
+                }}>
+                  <Box sx={{ 
+                    bgcolor: '#333', 
+                    px: 1, 
+                    py: 0.25, 
+                    borderRadius: 1,
+                  }}>
+                    <Typography variant="caption" color="grey.300">
+                      {order?.vehicleType === 'STANDARD' ? '菁英' : order?.vehicleType === 'PREMIUM' ? '尊榮' : order?.vehicleType === 'XL' ? '大型' : order?.vehicleType}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="grey.400" sx={{ fontFamily: 'monospace', letterSpacing: 1 }}>
+                    {order?.vehiclePlate}
+                  </Typography>
                 </Box>
-                <Avatar sx={{ width: 56, height: 56, bgcolor: '#333' }}>
-                  {order?.driverName?.[0] || 'D'}
-                </Avatar>
+              </Box>
             </Box>
 
-            <Paper sx={{ bgcolor: '#2a2a2a', p: 2, borderRadius: 3, mb: 3, display: 'flex', justifyContent: 'space-between' }}>
-               <Box>
-                  <Typography variant="caption" color="grey.500">車輛</Typography>
-                  <Typography variant="body1" color="white" fontWeight={500}>{order?.vehiclePlate}</Typography>
-               </Box>
-               <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="caption" color="grey.500">司機</Typography>
-                  <Typography variant="body1" color="white" fontWeight={500}>{order?.driverName}</Typography>
-               </Box>
+            {/* 詳細資訊面板 (與 WaitingPage 相同風格) */}
+            <Paper sx={{ bgcolor: '#2a2a2a', p: 2, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', mt: 0.8, mr: 2, flexShrink: 0 }} />
+                <Box>
+                  <Typography variant="caption" color="grey.500" display="block">上車</Typography>
+                  <Typography variant="body2" color="white" fontWeight={500}>
+                    {sessionStorage.getItem('currentOrderPickupAddress') || '上車地點'}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mt: 0.8, mr: 2, flexShrink: 0 }} />
+                <Box>
+                  <Typography variant="caption" color="grey.500" display="block">下車</Typography>
+                  <Typography variant="body2" color="white" fontWeight={500}>
+                    {sessionStorage.getItem('currentOrderDropoffAddress') || '下車地點'}
+                  </Typography>
+                </Box>
+              </Box>
             </Paper>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
-               <Button 
-                 fullWidth 
-                 variant="outlined" 
-                 startIcon={<PhoneIcon />}
-                 sx={{ color: 'white', borderColor: 'grey.700', py: 1.5, borderRadius: 2 }}
-               >
-                 聯絡
-               </Button>
-               <Button 
-                 fullWidth 
-                 variant="outlined"
-                 startIcon={<MessageIcon />} 
-                 sx={{ color: 'white', borderColor: 'grey.700', py: 1.5, borderRadius: 2 }}
-               >
-                 訊息
-               </Button>
-
-            </Box>
          </Box>
       </Box>
     </Box>

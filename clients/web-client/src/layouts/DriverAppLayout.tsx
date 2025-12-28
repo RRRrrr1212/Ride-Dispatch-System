@@ -24,7 +24,7 @@ export function DriverAppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { isOnline, toggleOnline, driver, setDriver, clearDriver } = useDriverStore();
+  const { isOnline, toggleOnline, driver, setDriver } = useDriverStore();
 
   // 自動初始化/恢復 driver (Demo 用途)
   useEffect(() => {
@@ -50,7 +50,19 @@ export function DriverAppLayout() {
 
       // 2. 檢查後端是否存在此司機，若不存在則補註冊 (解決後端重啟問題)
       try {
-        await driverApi.getDriver(user.id);
+        const response = await driverApi.getDriver(user.id);
+        if (response.data.success && response.data.data) {
+          const remoteDriver = response.data.data;
+          setDriver(remoteDriver);
+          
+          // 同步後端狀態
+          const isRemoteOnline = remoteDriver.status === 'ONLINE' || remoteDriver.status === 'BUSY';
+          console.log(`[DriverSync] Local: ${isOnline}, Remote: ${isRemoteOnline} (${remoteDriver.status})`);
+          
+          if (isOnline !== isRemoteOnline) {
+            useDriverStore.setState({ isOnline: isRemoteOnline });
+          }
+        }
       } catch (error) {
         console.warn('後端找不到司機，嘗試自動重新註冊...');
         try {
@@ -87,9 +99,34 @@ export function DriverAppLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (!window.confirm('確定要登出系統嗎？')) {
+      return;
+    }
+
+    try {
+      // 強制嘗試下線，不管當前狀態
+      // 首先嘗試使用 driver store 的 id，如果沒有則使用 auth store 的 user.id
+      const driverId = driver?.driverId || user?.id;
+      
+      if (driverId) {
+        // 使用 store action 也許會依賴內部狀態，這裡我們直接呼叫 API 最保險
+        await driverApi.goOffline(driverId).catch(err => {
+            console.warn('API 強制下線失敗 (可能已離線或網路問題):', err);
+        });
+      }
+    } catch (error) {
+      console.error('Logout process error:', error);
+    }
+    
+    // 清除狀態
+    useDriverStore.getState().clearDriver(); // 使用 getState 確保直接操作
     logout();
-    clearDriver();
+    
+    // 強制清除所有存儲
+    sessionStorage.clear();
+    localStorage.removeItem('driver-storage'); // 清除持久化的 driver 狀態
+    
     navigate('/login');
   };
 
@@ -141,7 +178,7 @@ export function DriverAppLayout() {
             <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 1100 }}>
               <AppMenu
                 userName={driver?.name || '司機'}
-                userRating="5.0 ★"
+                userBadge={driver?.vehicleType === 'STANDARD' ? '菁英' : driver?.vehicleType === 'PREMIUM' ? '尊榮' : driver?.vehicleType === 'XL' ? '大型' : undefined}
                 menuItems={menuItems}
               />
             </Box>

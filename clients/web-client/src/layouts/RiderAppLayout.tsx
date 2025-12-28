@@ -35,6 +35,14 @@ export function RiderAppLayout() {
     location.pathname.includes('/trip');
 
   const handleBack = () => {
+    // 如果是從完成頁面返回，需要清除訂單相關狀態
+    if (location.pathname.includes('/completed')) {
+      sessionStorage.removeItem('activeOrderId');
+      sessionStorage.removeItem('currentOrderPickup');
+      sessionStorage.removeItem('currentOrderDropoff');
+      sessionStorage.removeItem('currentOrderPickupAddress');
+      sessionStorage.removeItem('currentOrderDropoffAddress');
+    }
     navigate('/rider/home');
   };
 
@@ -72,8 +80,7 @@ export function RiderAppLayout() {
       {isMapPage && (
         <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 1100 }}>
           <AppMenu
-            userName={user?.name || '乘客'}
-            userRating="5.0 ★"
+            userName={user?.name || user?.phone || '乘客'}
             menuItems={menuItems}
           />
         </Box>

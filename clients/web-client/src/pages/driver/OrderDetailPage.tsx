@@ -103,10 +103,10 @@ export function OrderDetailPage() {
       }
     } catch (error: any) {
       if (error.response?.status === 409) {
-        alert('此訂單已被其他司機接受');
+        // 靜默處理：直接返回 dashboard
         navigate('/driver/dashboard');
       } else {
-        alert('接單失敗');
+        console.error('接單失敗:', error);
       }
     } finally {
       setAccepting(false);

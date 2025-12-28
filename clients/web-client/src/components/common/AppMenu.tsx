@@ -22,7 +22,7 @@ export interface AppMenuItem {
 
 interface AppMenuProps {
   userName: string;
-  userRating?: string;
+  userBadge?: string; // 可選的標籤，例如車種
   menuItems: AppMenuItem[];
 }
 
@@ -30,7 +30,7 @@ interface AppMenuProps {
  * 共用的漢堡選單組件
  * 統一乘客端和司機端的選單樣式
  */
-export function AppMenu({ userName, userRating = '5.0 ★', menuItems }: AppMenuProps) {
+export function AppMenu({ userName, userBadge, menuItems }: AppMenuProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
@@ -81,12 +81,26 @@ export function AppMenu({ userName, userRating = '5.0 ★', menuItems }: AppMenu
       >
         {/* 用戶資訊區塊 */}
         <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white' }}>
-            {userName}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'grey.400' }}>
-            {userRating}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white' }}>
+              {userName}
+            </Typography>
+            {userBadge && (
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.15)', 
+                  color: 'grey.300',
+                  px: 1, 
+                  py: 0.25, 
+                  borderRadius: 1,
+                  fontSize: '0.7rem',
+                }}
+              >
+                {userBadge}
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         {/* 選單項目 */}

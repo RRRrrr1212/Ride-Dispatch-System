@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { getVehicleTypeName } from '../../utils/vehicleTypes';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -134,14 +135,14 @@ function OrderCard({ order, onAccept, onDecline, accepting }: {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light' }}>
-              <PersonIcon sx={{ fontSize: 20 }} />
+              {order.riderName ? order.riderName.charAt(0) : <PersonIcon sx={{ fontSize: 20 }} />}
             </Avatar>
             <Box>
               <Typography variant="body2" fontWeight={600}>
-                {order.passengerId || '乘客'}
+                {order.riderName || '乘客'}
               </Typography>
               <Typography variant="caption" color="grey.400">
-                {order.vehicleType === 'STANDARD' ? '菁英優步' : order.vehicleType || '菁英優步'}
+                {getVehicleTypeName(order.vehicleType)}優步
               </Typography>
             </Box>
           </Box>
@@ -230,20 +231,63 @@ export function DashboardPage() {
     lat: 24.1618,
     lng: 120.6469,
   });
+  
+  // 是否使用後台設定的模擬位置 (如果是，則不啟用 GPS)
+  const [useSimulatedLocation, setUseSimulatedLocation] = useState(false);
 
-  // 獲取並持續追蹤當前位置
+  // 是否已完成後端位置檢查
+  const [initCheckDone, setInitCheckDone] = useState(false);
+
+  // 初始化：檢查是否有後台設定的位置
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    const fetchInitialLocation = async () => {
+      if (!driver?.driverId) {
+        setInitCheckDone(true);
+        return;
+      }
+      try {
+        const response = await driverApi.getDriver(driver.driverId);
+        if (response.data.success && response.data.data?.location) {
+          const loc = response.data.data.location;
+          // 有設定 location 且座標有效
+          if (loc.x && loc.y) {
+            console.log('使用後台設定的初始位置:', loc);
+            setDriverLocation({ lat: loc.x, lng: loc.y });
+            setUseSimulatedLocation(true);
+          }
+        }
+      } catch (error) {
+        console.error('獲取司機初始位置失敗:', error);
+      } finally {
+        setInitCheckDone(true);
+      }
+    };
+    
+    fetchInitialLocation();
+  }, [driver?.driverId]);
+
+  // 獲取並持續追蹤當前位置 (僅在未使用模擬位置且已完成初始檢查時啟用)
+  useEffect(() => {
+    // 如果還沒檢查完後端設定，或者已經確定使用模擬位置，則不啟動 GPS
+    if (!navigator.geolocation || useSimulatedLocation || !initCheckDone) return;
+
+    console.log('啟用 GPS 定位追蹤...');
 
     // 立即獲取一次
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        setDriverLocation({ lat: latitude, lng: longitude });
-        // 如果已上線，立即同步到後端 (雖然下面 watch 也會觸發，但為了保險)
-        if (isOnline && driver) {
-             driverApi.updateLocation(driver.driverId, latitude, longitude).catch(console.error);
-        }
+        // 再次檢查 (防呆)：確保在異步回調時沒有切換成模擬位置
+        setUseSimulatedLocation(prev => {
+          if (prev) return prev; 
+          
+          const { latitude, longitude } = position.coords;
+          setDriverLocation({ lat: latitude, lng: longitude });
+          
+          if (isOnline && driver) {
+               driverApi.updateLocation(driver.driverId, latitude, longitude).catch(console.error);
+          }
+          return prev;
+        });
       },
       console.error
     );
@@ -251,24 +295,21 @@ export function DashboardPage() {
     // 持續追蹤
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        setDriverLocation({ lat: latitude, lng: longitude });
-        
-        // 如果司機在線上，上傳位置到後端
-        if (isOnline && driver) {
-           // 注意：頻率可能很高，實務上應該 throttle，但 demo 版先這樣確保即時性
-           // 為了避免過度請求，可以使用簡單的 throttle 或依賴 watchPosition 的觸發頻率（瀏覽器通常會控制）
-           // 這裡我們加一個簡單的檢查，距離上次更新超過 5 秒再上傳，或者直接上傳如果流量允許
-           // 考慮 demo 效果，我們每 3 秒上傳一次的邏輯放在另一個 effect 比較好，
-           // 這裡先單純更新本地 state。
-        }
+        // 再次檢查
+        setUseSimulatedLocation(prev => {
+           if (prev) return prev;
+
+           const { latitude, longitude } = position.coords;
+           setDriverLocation({ lat: latitude, lng: longitude });
+           return prev;
+        });
       },
       console.error,
       { enableHighAccuracy: true, maximumAge: 0 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [isOnline, driver]);
+  }, [isOnline, driver, useSimulatedLocation, initCheckDone]);
 
   // 定期上傳位置到後端 (每 5 秒)
   useEffect(() => {
@@ -329,11 +370,10 @@ export function DashboardPage() {
       }
     } catch (error: any) {
       if (error.response?.status === 409) {
-        alert('此訂單已被其他司機接受');
-        // 刷新訂單列表
+        // 靜默處理：直接從列表中移除該訂單
         setOffers(prev => prev.filter(o => o.orderId !== orderId));
       } else {
-        alert('接單失敗：' + (error.response?.data?.error?.message || error.message));
+        console.error('接單失敗:', error.response?.data?.error?.message || error.message);
       }
     } finally {
       setAccepting(null);
@@ -350,11 +390,18 @@ export function DashboardPage() {
       if (showLoading) setLoading(true);
       setError(null);
       try {
-        const response = await adminApi.getOrders({ status: 'PENDING' });
+
+        // 使用 driverApi.getOffers 而非 adminApi.getOrders
+        // 這會確保後端根據車種和距離進行篩選
+        const response = await driverApi.getOffers(driver.driverId);
         if (response.data.success && response.data.data) {
-          const allOrders = response.data.data.orders || [];
-          // 過濾掉已忽略的訂單
-          const filteredOrders = allOrders.filter((o: Order) => !ignoredOrdersRef.has(o.orderId));
+          const allOrders = response.data.data.offers || [];
+          // 過濾掉已忽略的訂單 以及 車種不符的訂單 (雙重保險)
+          const filteredOrders = allOrders.filter((o: Order) => {
+             const isIgnored = ignoredOrdersRef.has(o.orderId);
+             const isTypeMatch = driver ? o.vehicleType === driver.vehicleType : true;
+             return !isIgnored && isTypeMatch;
+          });
           setOffers(filteredOrders);
         }
       } catch (err: any) {
@@ -427,6 +474,7 @@ export function DashboardPage() {
           markers={[]}
           driverPosition={driverLocation}
           bottomOffset={200}
+          topOffset={80}
         />
         
         {/* 離線提示 - 底部面板 */}

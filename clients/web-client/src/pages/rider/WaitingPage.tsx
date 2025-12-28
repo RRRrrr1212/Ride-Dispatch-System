@@ -7,14 +7,11 @@ import {
   CircularProgress,
   Paper,
   LinearProgress,
-  IconButton,
+
 } from '@mui/material';
 import {
   LocationOn as PickupIcon,
-  Phone as PhoneIcon,
-  Message as MessageIcon,
   EmojiTransportation as CarIcon,
-  CenterFocusStrong as FitBoundsIcon,
 } from '@mui/icons-material';
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
@@ -57,11 +54,7 @@ export function WaitingPage() {
     setAutoCenter(false);
   };
   
-  // 恢復自動置中
-  const handleRecenter = () => {
-    setAutoCenter(true);
-    setManualFitBounds(false);
-  };
+
   
   // 等待計時器
   useEffect(() => {
@@ -117,7 +110,7 @@ export function WaitingPage() {
               positions.push(newPos);
               if (positions.length > 3) positions.shift(); // 只保留最近 3 個
               
-              // 如果有 3 個位置且變化都小於 15 公尺，認為已停止
+              // 如果有 3 個位置且變化都小於 0.5 公尺，認為已停止
               if (positions.length >= 3) {
                 const isStationary = positions.every((pos, i) => {
                   if (i === 0) return true;
@@ -126,7 +119,7 @@ export function WaitingPage() {
                     Math.pow((pos.lat - prev.lat) * 111000, 2) +
                     Math.pow((pos.lng - prev.lng) * 111000 * Math.cos(pos.lat * Math.PI / 180), 2)
                   );
-                  return dist < 15; // 15 公尺
+                  return dist < 0.5; // 移動小於 0.5 公尺 (約 3.6km/h) 視為停止 (更嚴謹)
                 });
                 setDriverStopped(isStationary);
               }
@@ -163,7 +156,7 @@ export function WaitingPage() {
     };
 
     poll(); // 立即執行一次
-    const timer = setInterval(poll, 1000); // 每秒更新一次
+    const timer = setInterval(poll, 500); // 每0.5秒更新一次
     return () => clearInterval(timer);
   }, [orderId, navigate, pickupLocation, driverPosition]);
 
@@ -204,39 +197,73 @@ export function WaitingPage() {
   };
 
   // 根據司機當前位置和上車點顯示距離估算
-  // 這個函數會在每次 driverPosition 變化時被重新計算
-  const getSimulatedArrivalMinutes = () => {
-    // 使用司機當前位置到上車點的實時距離
-    if (driverPosition && pickupLocation) {
-      const distM = calculateDistance(driverPosition, pickupLocation);
-      
-      // 如果距離太遠 (> 50km)，可能是位置錯誤
-      if (distM > 50000) return -1;
-      
-      // 假設市區均速 30km/h = 500m/min
-      // 直線距離乘以 1.3 係數來模擬實際道路距離
-      const estimatedDistM = distM * 1.3;
-      const mins = Math.ceil(estimatedDistM / 500);
-      
-      // 最少顯示 1 分鐘
-      return Math.max(1, mins);
+  // 使用 useMemo 避免不必要的重新計算
+  const etaInfo = useMemo(() => {
+    if (!driverPosition || !pickupLocation) {
+      return { minutes: -1, distanceM: -1, isArrived: false };
     }
-    return -1; // 當資料不足時
-  };
+    
+    const distM = calculateDistance(driverPosition, pickupLocation);
+    
+    // 如果距離太遠 (> 50km)，可能是位置錯誤
+    if (distM > 50000) {
+      return { minutes: -1, distanceM: distM, isArrived: false };
+    }
+    
+    // 判斷是否已到達：與司機端保持一致 (100公尺)
+    const isArrived = distM <= 100;
+    
+    // 假設市區均速 45km/h
+    // 直線距離乘以 1.3 係數來模擬實際道路距離
+    const estimatedDistM = distM * 1.3;
+    const mins = Math.ceil((estimatedDistM / 1000) / 45 * 60);
+    
+    return { 
+      minutes: Math.max(1, mins), 
+      distanceM: distM,
+      isArrived 
+    };
+  }, [driverPosition, pickupLocation, driverStopped]);
+  
+  // 到達狀態使用滯後機制 - 一旦到達就不會再變回未到達
+  const [hasArrivedLock, setHasArrivedLock] = useState(false);
+  
+  useEffect(() => {
+    if (etaInfo.isArrived && !hasArrivedLock) {
+      setHasArrivedLock(true);
+    }
+  }, [etaInfo.isArrived, hasArrivedLock]);
+  
+  // 最終到達狀態
+  const isDriverArrived = hasArrivedLock || etaInfo.isArrived;
 
   // 計算地圖邊界
   const mapBounds = useMemo(() => {
     if (manualFitBounds) return null; // 手動模式不自動縮放
-
+    
+    // ACCEPTED 狀態（司機正在前往上車點）：顯示司機位置和上車點
+    if (order?.status === 'ACCEPTED' && driverPosition && pickupLocation) {
+      return [driverPosition, pickupLocation] as [MapLocation, MapLocation];
+    }
+    
+    // PENDING 狀態（等待司機接單）：只顯示上車點附近
+    if (order?.status === 'PENDING' && pickupLocation) {
+      return null; // 不縮放，保持當前視角
+    }
+    
+    // ONGOING 狀態（正在前往目的地）：顯示上車點和下車點
+    if (order?.status === 'ONGOING' && pickupLocation && dropoffLocation) {
+      return [pickupLocation, dropoffLocation] as [MapLocation, MapLocation];
+    }
+    
+    // 預設：如果有上下車點就顯示
     if (pickupLocation && dropoffLocation) {
       return [pickupLocation, dropoffLocation] as [MapLocation, MapLocation];
     }
     return null;
-  }, [pickupLocation, dropoffLocation, manualFitBounds]);
+  }, [order?.status, driverPosition, pickupLocation, dropoffLocation, manualFitBounds]);
 
-  const handleFitBounds = () => {
-    setManualFitBounds(false); // 啟用自動邊界
-  };
+
 
   const [routePath, setRoutePath] = useState<MapLocation[] | null>(null);
 
@@ -288,26 +315,7 @@ export function WaitingPage() {
         disableAutoCenter={!autoCenter}
       />
 
-       {/* 右側地圖控制按鈕 (全覽視角) */}
-       <Box sx={{
-        position: 'absolute',
-        right: 16,
-        bottom: 350, 
-        zIndex: 1000,
-      }}>
-         <IconButton 
-           onClick={handleRecenter}
-           sx={{ 
-             bgcolor: 'white', 
-             color: 'black',
-             boxShadow: 3,
-             '&:hover': { bgcolor: '#f5f5f5' }
-           }}
-           size="large"
-         >
-           <FitBoundsIcon />
-         </IconButton>
-      </Box>
+
       
       {/* 底部面板 */}
       <Box sx={{
@@ -350,6 +358,28 @@ export function WaitingPage() {
               <Typography variant="h5" fontWeight="bold" color="white" gutterBottom>
                 正在尋找附近的司機...
               </Typography>
+
+              {/* 顯示車種標誌 (尤其是尊榮) */}
+              {order && (
+                  <Box sx={{ mb: 1 }}>
+                    <Box sx={{ 
+                      display: 'inline-block',
+                      bgcolor: order.vehicleType === 'PREMIUM' ? 'black' : '#333',
+                      color: order.vehicleType === 'PREMIUM' ? '#FFD700' : 'white',
+                      px: 2, 
+                      py: 0.5, 
+                      borderRadius: 4,
+                      fontWeight: 'bold',
+                      border: order.vehicleType === 'PREMIUM' ? '1px solid #FFD700' : '1px solid #555',
+                      boxShadow: order.vehicleType === 'PREMIUM' ? '0 0 10px rgba(255, 215, 0, 0.3)' : 'none'
+                    }}>
+                        {order.vehicleType === 'STANDARD' ? '菁英優步' : 
+                         order.vehicleType === 'PREMIUM' ? '👑 尊榮優步' : 
+                         order.vehicleType === 'XL' ? 'UberXL' : order.vehicleType}
+                    </Box>
+                  </Box>
+              )}
+
               <Typography variant="body1" color="grey.400" sx={{ mb: 3 }}>
                 已等待 {formatTime(waitingTime)}
               </Typography>
@@ -393,38 +423,45 @@ export function WaitingPage() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                   <Typography variant="caption" color="grey.500">
-                    {driverStopped ? '司機狀態' : '司機將在'}
+                    司機將在
                   </Typography>
                   <Typography variant="h3" fontWeight="bold" color="white">
-                     {(() => {
-                        if (driverStopped) {
-                          return <span style={{ color: '#4ade80' }}>已到達</span>;
-                        }
-                        const mins = getSimulatedArrivalMinutes();
-                        return mins === -1 ? (
-                            <span style={{ fontSize: '1.5rem' }}>位置同步中...</span>
-                        ) : (
-                            <>{mins} <span style={{ fontSize: '1rem' }}>分鐘後到達</span></>
-                        );
-                     })()}
+                     {isDriverArrived ? (
+                       <span style={{ color: '#4ade80' }}>已到達</span>
+                     ) : etaInfo.minutes === -1 ? (
+                       <span style={{ fontSize: '1.5rem' }}>位置同步中...</span>
+                     ) : (
+                       <>{etaInfo.minutes} <span style={{ fontSize: '1rem' }}>分鐘後到達</span></>
+                     )}
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'right' }}>
+                   {/* 司機名字 - 主要資訊 */}
                    <Typography variant="h5" color="white" fontWeight="bold">
-                     {order.vehiclePlate}
+                     {order.driverName || '司機'}
                    </Typography>
-                    <Box sx={{ 
-                      display: 'inline-block', 
-                      bgcolor: '#333', 
-                      px: 1, 
-                      py: 0.5, 
-                      borderRadius: 1, 
-                      mt: 0.5 
-                    }}>
-                      <Typography variant="caption" color="grey.300">
-                        {order.vehicleType === 'STANDARD' ? '菁英優步' : order.vehicleType} • ⭐ 4.9
-                      </Typography>
-                    </Box>
+                   {/* 車種 + 車牌 - 次要資訊 */}
+                   <Box sx={{ 
+                     display: 'flex', 
+                     alignItems: 'center', 
+                     justifyContent: 'flex-end',
+                     gap: 1,
+                     mt: 0.5 
+                   }}>
+                     <Box sx={{ 
+                       bgcolor: '#333', 
+                       px: 1, 
+                       py: 0.25, 
+                       borderRadius: 1,
+                     }}>
+                       <Typography variant="caption" color="grey.300">
+                         {order.vehicleType === 'STANDARD' ? '菁英' : order.vehicleType === 'PREMIUM' ? '尊榮' : order.vehicleType === 'XL' ? '大型' : order.vehicleType}
+                       </Typography>
+                     </Box>
+                     <Typography variant="caption" color="grey.400" sx={{ fontFamily: 'monospace', letterSpacing: 1 }}>
+                       {order.vehiclePlate}
+                     </Typography>
+                   </Box>
                 </Box>
               </Box>
 
@@ -450,24 +487,7 @@ export function WaitingPage() {
                   </Box>
               </Paper>
 
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                 <Button 
-                   fullWidth
-                   variant="contained" 
-                   startIcon={<PhoneIcon />}
-                   sx={{ bgcolor: '#333', '&:hover': { bgcolor: '#444' }, py: 1.5, borderRadius: 2 }}
-                 >
-                   聯絡司機
-                 </Button>
-                 <Button 
-                   fullWidth
-                   variant="contained"
-                   startIcon={<MessageIcon />}
-                   sx={{ bgcolor: '#333', '&:hover': { bgcolor: '#444' }, py: 1.5, borderRadius: 2 }}
-                 >
-                   傳訊息
-                 </Button>
-              </Box>
+
             </Box>
           )}
         </Box>

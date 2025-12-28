@@ -305,6 +305,15 @@ export function LeafletMap({
     });
   }
 
+  // Debug Log
+  useEffect(() => {
+    console.log('🗺️ LeafletMap Render:', { 
+      center, 
+      userMarker: allMarkers.find(m => m.id === 'user'),
+      totalMarkers: allMarkers.length 
+    });
+  }, [center, allMarkers]);
+
   return (
     <Box
       sx={{

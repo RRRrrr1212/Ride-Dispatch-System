@@ -19,6 +19,7 @@ export interface Location {
 export interface Order {
   orderId: string;
   passengerId: string;
+  riderName?: string;
   driverId?: string;
   driverName?: string;
   driverPhone?: string;
@@ -104,5 +105,6 @@ export interface Rider {
   riderId: string;
   name: string;
   phone: string;
+  location?: Location;
   createdAt: string;
 }

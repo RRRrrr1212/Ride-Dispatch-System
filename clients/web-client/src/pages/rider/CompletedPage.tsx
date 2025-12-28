@@ -71,6 +71,11 @@ export function CompletedPage() {
       const lng = orderData.dropoffLocation.y ?? (orderData.dropoffLocation as any).lng;
       
       if (lat !== undefined && lng !== undefined) {
+        // 儲存下車點為乘客的「最後位置」，下次叫車時會從這裡出發
+        const lastLocation = { lat: Number(lat), lng: Number(lng) };
+        localStorage.setItem('riderLastLocation', JSON.stringify(lastLocation));
+        console.log('📍 儲存乘客最後位置 (下車點):', lastLocation);
+        
         try {
           const addr = await reverseGeocodeWithCache(lat, lng);
           setDropoffAddress(addr);
@@ -134,10 +139,11 @@ export function CompletedPage() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography color="text.secondary">時長</Typography>
               <Typography>{(() => {
-                // duration 是秒數，轉換為分鐘
+                // 後端 duration 已經是分鐘 (不需要再除以 60)
                 const dur = order?.duration;
-                if (!dur) return '-';
-                const mins = Math.ceil(Number(dur) / 60);
+                if (dur === undefined || dur === null) return '-';
+                // 確保最少顯示 1 分鐘
+                const mins = Number(dur);
                 return mins > 0 ? mins : 1;
               })()} 分鐘</Typography>
             </Box>

@@ -195,6 +195,7 @@ public class OrderController {
         Map<String, Object> response = new HashMap<>();
         response.put("orderId", order.getOrderId());
         response.put("passengerId", order.getPassengerId());
+        response.put("riderName", order.getRiderName());
         response.put("status", order.getStatus().name());
         response.put("vehicleType", order.getVehicleType().name());
         response.put("pickupLocation", order.getPickupLocation());
