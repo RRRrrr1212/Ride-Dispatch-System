@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { StatusChip } from '../../components/common/StatusChip';
 import { adminApi } from '../../api/admin.api';
+import { getVehicleTypeName } from '../../utils/vehicleTypes';
 import type { Order, OrderStatus } from '../../types';
 
 export function OrdersPage() {
@@ -90,7 +91,7 @@ export function OrdersPage() {
                   <TableCell>{order.passengerId}</TableCell>
                   <TableCell>{order.driverId || '-'}</TableCell>
                   <TableCell><StatusChip status={order.status} /></TableCell>
-                  <TableCell>{order.vehicleType}</TableCell>
+                  <TableCell>{getVehicleTypeName(order.vehicleType)}</TableCell>
                   <TableCell>${order.fare || order.estimatedFare || '-'}</TableCell>
                   <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
                 </TableRow>

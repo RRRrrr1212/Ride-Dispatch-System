@@ -107,9 +107,10 @@ function AddressLine({ location, type, label }: { location: any; type: 'pickup' 
 }
 
 // 訂單卡片組件
-function OrderCard({ order, onAccept, accepting }: { 
+function OrderCard({ order, onAccept, onDecline, accepting }: { 
   order: Order; 
   onAccept: (orderId: string) => void;
+  onDecline: (orderId: string) => void;
   accepting: string | null;
 }) {
   const isAccepting = accepting === order.orderId;
@@ -123,6 +124,8 @@ function OrderCard({ order, onAccept, accepting }: {
         border: '1px solid',
         borderColor: 'divider',
         overflow: 'visible',
+        bgcolor: '#2a2a2a', // 深色卡片背景
+        color: 'white',
       }}
     >
       <CardContent sx={{ p: 2.5 }}>
@@ -136,8 +139,8 @@ function OrderCard({ order, onAccept, accepting }: {
               <Typography variant="body2" fontWeight={600}>
                 {order.passengerId || '乘客'}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {order.vehicleType || 'STANDARD'}
+              <Typography variant="caption" color="grey.400">
+                {order.vehicleType === 'STANDARD' ? '菁英優步' : order.vehicleType || '菁英優步'}
               </Typography>
             </Box>
           </Box>
@@ -154,37 +157,58 @@ function OrderCard({ order, onAccept, accepting }: {
           </Box>
         </Box>
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 2, borderColor: 'grey.700' }} />
 
         {/* 路線資訊 */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
           <AddressLine location={order.pickupLocation} type="pickup" label="上車地點" />
           
           {/* 連接線 */}
-          <Box sx={{ ml: 1.2, borderLeft: '2px dashed', borderColor: 'divider', height: 12 }} />
+          <Box sx={{ ml: 1.2, borderLeft: '2px dashed', borderColor: 'grey.700', height: 12 }} />
           
           <AddressLine location={order.dropoffLocation} type="dropoff" label="下車地點" />
         </Box>
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 2, borderColor: 'grey.700' }} />
 
-        {/* 接單按鈕 */}
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
-          onClick={() => onAccept(order.orderId)}
-          disabled={isAccepting}
-          sx={{ 
-            py: 1.5,
-            borderRadius: 2,
-            fontWeight: 'bold',
-            fontSize: 16,
-          }}
-          startIcon={isAccepting ? <CircularProgress size={20} color="inherit" /> : <CarIcon />}
-        >
-          {isAccepting ? '接單中...' : '接受訂單'}
-        </Button>
+        {/* 操作按鈕 */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => onDecline(order.orderId)}
+            disabled={!!accepting}
+            sx={{ 
+              flex: 1,
+              py: 1.5,
+              borderRadius: 2,
+              fontWeight: 'bold',
+              fontSize: 16,
+              borderColor: 'grey.600',
+              color: 'grey.300',
+              '&:hover': {
+                borderColor: 'grey.400',
+                bgcolor: 'rgba(255,255,255,0.05)'
+              }
+            }}
+          >
+            拒絕
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => onAccept(order.orderId)}
+            disabled={isAccepting || !!accepting}
+            sx={{ 
+              flex: 2,
+              py: 1.5,
+              borderRadius: 2,
+              fontWeight: 'bold',
+              fontSize: 16,
+            }}
+            startIcon={isAccepting ? <CircularProgress size={20} color="inherit" /> : <CarIcon />}
+          >
+            {isAccepting ? '接單中...' : '接受訂單'}
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );
@@ -198,11 +222,60 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const ignoredOrdersRef = useState<Set<string>>(new Set())[0]; // 使用 Set 記錄已忽略的訂單
   
-  const [driverLocation] = useState<MapLocation>({
+  // 使用真實位置初始化，預設為台中市政府
+  const [driverLocation, setDriverLocation] = useState<MapLocation>({
     lat: 24.1618,
     lng: 120.6469,
   });
+
+  // 獲取當前位置
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setDriverLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error('無法獲取位置:', error);
+        }
+      );
+    }
+  }, []);
+
+  // 檢查是否有進行中的訂單 (防止刷新或誤觸首頁導致狀態丟失)
+  useEffect(() => {
+    const checkActiveOrder = async () => {
+      // 增加一個簡單的鎖，如果剛登出或剛清除狀態，不要立刻跳轉
+      if (sessionStorage.getItem('isResetting')) return;
+
+      // 1. 檢查 sessionStorage (最快)
+      const storedOrderId = sessionStorage.getItem('driverActiveOrderId');
+      if (storedOrderId) {
+         navigate(`/driver/trip/${storedOrderId}`);
+         return;
+      }
+
+      // 2. API 檢查 (略過，避免在狀態卡住時無限迴圈，先依靠 session)
+      // 如果需要更嚴格的檢查，可以在這裡加回，但目前先暫停，讓使用者有機會操作 Menu
+    };
+
+    checkActiveOrder();
+  }, [navigate, driver]);
+
+
+
+  // 拒絕訂單
+  const handleDecline = (orderId: string) => {
+    if (window.confirm('確定要拒絕此訂單嗎？')) {
+      ignoredOrdersRef.add(orderId);
+      setOffers(prev => prev.filter(o => o.orderId !== orderId));
+    }
+  };
 
   // 接單處理
   const handleAcceptOrder = async (orderId: string) => {
@@ -233,36 +306,76 @@ export function DashboardPage() {
       return;
     }
 
-    const fetchOffers = async () => {
-      if (offers.length === 0) setLoading(true);
+    const fetchOffers = async (showLoading = false) => {
+      if (showLoading) setLoading(true);
       setError(null);
       try {
         const response = await adminApi.getOrders({ status: 'PENDING' });
         if (response.data.success && response.data.data) {
-          setOffers(response.data.data.orders || []);
+          const allOrders = response.data.data.orders || [];
+          // 過濾掉已忽略的訂單
+          const filteredOrders = allOrders.filter((o: Order) => !ignoredOrdersRef.has(o.orderId));
+          setOffers(filteredOrders);
         }
       } catch (err: any) {
         console.error('取得訂單失敗:', err);
-        setError('無法取得訂單列表');
+        // 只有在持續失敗且沒有舊資料時才顯示錯誤，避免閃爍
+        if (offers.length === 0) {
+           setError('無法取得訂單列表');
+        }
       } finally {
-        setLoading(false);
+        if (showLoading) setLoading(false);
       }
     };
 
-    fetchOffers();
-    const timer = setInterval(fetchOffers, 5000);
+    fetchOffers(true);
+    const timer = setInterval(() => fetchOffers(false), 5000);
     return () => clearInterval(timer);
   }, [driver, isOnline]);
 
-  const markers: MapMarker[] = useMemo(() => offers.map((order, index) => {
-    const coords = getCoordinates(order.pickupLocation);
-    return {
-      id: order.orderId,
-      position: coords || { lat: 24.16 + index * 0.005, lng: 120.64 + index * 0.005 },
-      type: 'pickup' as const,
-      label: `$${order.estimatedFare || 70}`,
-    };
-  }), [offers]);
+  // 標記與邊界計算
+  const { markers, mapBounds } = useMemo(() => {
+    const newMarkers: MapMarker[] = [];
+    const points: MapLocation[] = [];
+
+    offers.forEach((order) => {
+      // 上車點
+      const pickupCoords = getCoordinates(order.pickupLocation);
+      if (pickupCoords) {
+        newMarkers.push({
+          id: `${order.orderId}-pickup`,
+          position: pickupCoords,
+          type: 'pickup',
+          label: `$${order.estimatedFare || 70}`,
+        });
+        points.push(pickupCoords);
+      }
+
+      // 下車點
+      const dropoffCoords = getCoordinates(order.dropoffLocation);
+      if (dropoffCoords) {
+        newMarkers.push({
+          id: `${order.orderId}-dropoff`,
+          position: dropoffCoords,
+          type: 'dropoff',
+        });
+        points.push(dropoffCoords);
+      }
+    });
+    
+    // 將司機位置也加入考量，確保視野包含自己
+    if (driverLocation) {
+        points.push(driverLocation);
+    }
+    
+    // 如果有點數據且大於等於 2 個（例如司機+上車點），回傳所有點讓地圖自動縮放
+    let bounds: MapLocation[] | null = null;
+    if (points.length >= 2) {
+       bounds = points;
+    }
+
+    return { markers: newMarkers, mapBounds: bounds };
+  }, [offers, driverLocation]);
 
   if (!isOnline) {
     return (
@@ -273,6 +386,7 @@ export function DashboardPage() {
           zoom={13}
           markers={[]}
           driverPosition={driverLocation}
+          bottomOffset={200}
         />
         
         {/* 離線提示 - 底部面板 */}
@@ -284,6 +398,8 @@ export function DashboardPage() {
           bgcolor: '#1a1a1a',
           borderRadius: '24px 24px 0 0',
           p: 3,
+          pb: 6, // 增加底部 padding 避免被裝置 Home Indicator 遮擋
+          minHeight: 180, // 增加最小高度
           zIndex: 1000,
         }}>
           {/* 拖曳指示條 */}
@@ -319,7 +435,12 @@ export function DashboardPage() {
         zoom={14}
         markers={markers}
         driverPosition={driverLocation}
+        bounds={mapBounds}
+        bottomOffset={380} // 為底部訂單列表預留空間
+        topOffset={80} // 避開右上角上線開關
       />
+
+
 
       {/* 底部訂單面板 */}
       <Box sx={{ 
@@ -328,6 +449,7 @@ export function DashboardPage() {
         left: 0,
         right: 0,
         maxHeight: '55%',
+        minHeight: 200, // 增加最小高度
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#1a1a1a',
@@ -363,15 +485,6 @@ export function DashboardPage() {
           <Typography variant="h6" fontWeight="bold" color="#fff">
             可接訂單
           </Typography>
-          <Chip 
-            label={`${offers.length} 筆`} 
-            size="small" 
-            sx={{ 
-              bgcolor: 'success.main',
-              color: '#fff',
-              fontWeight: 600,
-            }}
-          />
         </Box>
 
         {/* 可滑動的訂單列表 */}
@@ -400,8 +513,8 @@ export function DashboardPage() {
           )}
 
           {!loading && !error && offers.length === 0 && (
-            <Card sx={{ borderRadius: 3, textAlign: 'center', py: 4, bgcolor: '#2a2a2a' }}>
-              <Typography variant="h1" sx={{ fontSize: 48, mb: 1 }}>🚗</Typography>
+            <Card sx={{ borderRadius: 3, textAlign: 'center', py: 2, bgcolor: '#2a2a2a', mb: 2 }}>
+              <Typography variant="h1" sx={{ fontSize: 32, mb: 0.5 }}>🚗</Typography>
               <Typography color="grey.400">目前沒有可接的訂單</Typography>
               <Typography variant="body2" color="grey.500">請稍後再試</Typography>
             </Card>
@@ -412,6 +525,7 @@ export function DashboardPage() {
               key={order.orderId} 
               order={order} 
               onAccept={handleAcceptOrder}
+              onDecline={handleDecline}
               accepting={accepting}
             />
           ))}

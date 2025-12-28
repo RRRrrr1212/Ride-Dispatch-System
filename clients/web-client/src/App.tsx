@@ -32,6 +32,7 @@ import { ProfilePage as DriverProfile } from './pages/driver/ProfilePage';
 import { DashboardPage as AdminDashboard } from './pages/admin/DashboardPage';
 import { OrdersPage } from './pages/admin/OrdersPage';
 import { DriversPage } from './pages/admin/DriversPage';
+import { RidersPage } from './pages/admin/RidersPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { RatePlansPage } from './pages/admin/RatePlansPage';
 
@@ -89,6 +90,7 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'drivers', element: <DriversPage /> },
+      { path: 'riders', element: <RidersPage /> },
       { path: 'audit-logs', element: <AuditLogsPage /> },
       { path: 'rate-plans', element: <RatePlansPage /> },
     ],

@@ -69,11 +69,27 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
 /**
  * 將地址轉換為經緯度 (正向地理編碼)
  * @param address 地址字串
+ * @param center Optional. 優先搜尋的中心點，用於 Location Biasing
  * @returns 座標，或 null 如果查詢失敗
  */
-export async function geocode(address: string): Promise<{ lat: number; lng: number } | null> {
+export async function geocode(
+  address: string, 
+  center?: { lat: number; lng: number }
+): Promise<{ lat: number; lng: number } | null> {
   try {
-    const url = `${NOMINATIM_URL}/search?format=json&q=${encodeURIComponent(address)}&limit=1&accept-language=zh-TW`;
+    let url = `${NOMINATIM_URL}/search?format=json&q=${encodeURIComponent(address)}&limit=1&accept-language=zh-TW`;
+
+    // 如果有提供中心點，設定優先搜尋範圍 (Viewbox)
+    // 這裡設定經緯度 +/- 0.5 度 (約 50 公里範圍)
+    if (center) {
+      const viewbox = [
+        center.lng - 0.5, // left (min lon)
+        center.lat + 0.5, // top (max lat)
+        center.lng + 0.5, // right (max lon)
+        center.lat - 0.5  // bottom (min lat)
+      ].join(',');
+      url += `&viewbox=${viewbox}`;
+    }
 
     const response = await throttledFetch(url, {
       headers: { 'User-Agent': 'RideDispatchSystem/1.0' }

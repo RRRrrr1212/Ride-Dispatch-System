@@ -1,83 +1,96 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   IconButton,
   Switch,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Typography,
-  Divider,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  History as HistoryIcon,
-  Person as PersonIcon,
+  Home as HomeIcon,
+  AttachMoney as AttachMoneyIcon,
   Logout as LogoutIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useDriverStore } from '../stores/driver.store';
 import { useAuthStore } from '../stores/auth.store';
 import { adminApi } from '../api/admin.api';
+import { AppMenu, type AppMenuItem } from '../components/common/AppMenu';
+import { driverApi } from '../api/driver.api';
+
+// ... (imports)
 
 export function DriverAppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { isOnline, toggleOnline, driver, setDriver, clearDriver } = useDriverStore();
-  
-  // 選單狀態
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-  // 自動初始化 driver (Demo 用途)
+  // 自動初始化/恢復 driver (Demo 用途)
   useEffect(() => {
     const initDriver = async () => {
-      if (user && user.role === 'driver' && !driver) {
+      if (!user || user.role !== 'driver') return;
+
+      let currentDriver = driver;
+
+      // 1. 如果本地沒有 driver，先建立一個 (Demo 資料)
+      if (!currentDriver) {
         const vehiclePlate = 'ABC-' + Math.floor(Math.random() * 9000 + 1000);
-        const newDriver = {
+        currentDriver = {
           driverId: user.id,
           name: user.name || '司機',
           phone: user.phone || '0912345678',
           vehiclePlate,
-          vehicleType: 'STANDARD' as const,
-          status: 'OFFLINE' as const,
+          vehicleType: 'STANDARD',
+          status: 'OFFLINE',
           busy: false,
         };
-        
-        setDriver(newDriver);
-        
+        setDriver(currentDriver);
+      }
+
+      // 2. 檢查後端是否存在此司機，若不存在則補註冊 (解決後端重啟問題)
+      try {
+        await driverApi.getDriver(user.id);
+      } catch (error) {
+        console.warn('後端找不到司機，嘗試自動重新註冊...');
         try {
           await adminApi.createDriver({
-            driverId: user.id,
-            name: user.name || '司機',
-            phone: user.phone || '0912345678',
-            vehiclePlate,
-            vehicleType: 'STANDARD',
+            driverId: currentDriver.driverId,
+            name: currentDriver.name,
+            phone: currentDriver.phone,
+            vehiclePlate: currentDriver.vehiclePlate,
+            vehicleType: currentDriver.vehicleType,
           });
-          console.log('司機已在後端註冊:', user.id);
-        } catch (error: any) {
-          if (error.response?.status !== 409) {
-            console.warn('後端司機註冊失敗:', error.message);
+          console.log('司機自動註冊成功');
+          
+          // 如果前端顯示為上線，但後端剛重啟(默認離線)，這裡應該同步後端狀態，或者強制後端上線
+          // 為了體驗平順，如果前端是 isOnline，我們嘗試幫他 goOnline
+          if (isOnline) {
+             // 稍微延遲一下確保註冊完成
+             setTimeout(() => {
+                 driverApi.goOnline(currentDriver!.driverId, { x: 120.6469, y: 24.1618 })
+                   .catch(e => console.error('自動上線失敗', e));
+             }, 500);
+          }
+          
+        } catch (regError: any) {
+          // 409 代表已存在，忽略
+          if (regError.response?.status !== 409) {
+            console.error('司機自動註冊失敗:', regError);
           }
         }
       }
     };
     
     initDriver();
-  }, [user, driver, setDriver]);
+    // 依賴列表只監聽 user，不監聽 driver，避免 driver 變更造成的無限迴圈
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleLogout = () => {
     logout();
     clearDriver();
     navigate('/login');
-    setMenuAnchor(null);
-  };
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    setMenuAnchor(null);
   };
 
   // 判斷頁面類型
@@ -89,6 +102,27 @@ export function DriverAppLayout() {
   const handleBack = () => {
     navigate('/driver/dashboard');
   };
+
+  // 定義司機端的選單項目
+  const menuItems: AppMenuItem[] = [
+    {
+      label: '首頁',
+      icon: <HomeIcon fontSize="small" />,
+      onClick: () => navigate('/driver/dashboard'),
+    },
+    {
+      label: '收入',
+      icon: <AttachMoneyIcon fontSize="small" />,
+      onClick: () => navigate('/driver/earnings'),
+    },
+    {
+      label: '登出',
+      icon: <LogoutIcon fontSize="small" />,
+      onClick: handleLogout,
+      color: '#ff5252',
+      dividerBefore: true,
+    },
+  ];
 
   return (
     <Box sx={{ 
@@ -105,56 +139,11 @@ export function DriverAppLayout() {
           {/* 左上角懸浮選單 (只在 Dashboard 顯示) */}
           {!isTrip && (
             <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 1100 }}>
-              <IconButton
-                onClick={(e) => setMenuAnchor(e.currentTarget)}
-                sx={{
-                  bgcolor: 'white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  '&:hover': { bgcolor: '#f5f5f5' },
-                  width: 44,
-                  height: 44,
-                }}
-              >
-                <MenuIcon sx={{ color: '#1a1a1a' }} />
-              </IconButton>
-              
-              <Menu
-                anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
-                onClose={() => setMenuAnchor(null)}
-                PaperProps={{
-                  sx: { 
-                    borderRadius: 3, 
-                    minWidth: 220, 
-                    mt: 1, 
-                    boxShadow: 8,
-                    bgcolor: '#2a2a2a', // 改為深色背景
-                    color: 'white',     // 文字改為白色
-                  }
-                }}
-              >
-                <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white' }}>
-                    {driver?.name || '司機'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                    {driver?.vehiclePlate}
-                  </Typography>
-                </Box>
-                <MenuItem onClick={() => handleNavigation('/driver/history')} sx={{ py: 1.5 }}>
-                  <ListItemIcon><HistoryIcon fontSize="small" sx={{ color: 'grey.300' }} /></ListItemIcon>
-                  <ListItemText primary="歷史行程" />
-                </MenuItem>
-                <MenuItem onClick={() => handleNavigation('/driver/profile')} sx={{ py: 1.5 }}>
-                  <ListItemIcon><PersonIcon fontSize="small" sx={{ color: 'grey.300' }} /></ListItemIcon>
-                  <ListItemText primary="個人資料" />
-                </MenuItem>
-                <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-                <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: '#ff5252' }}>
-                  <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: '#ff5252' }} /></ListItemIcon>
-                  <ListItemText primary="登出" />
-                </MenuItem>
-              </Menu>
+              <AppMenu
+                userName={driver?.name || '司機'}
+                userRating="5.0 ★"
+                menuItems={menuItems}
+              />
             </Box>
           )}
 
@@ -168,7 +157,7 @@ export function DriverAppLayout() {
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              bgcolor: 'rgba(255,255,255,0.95)', // 保持淺色背景以凸顯開關
+              bgcolor: 'rgba(255,255,255,0.95)',
               borderRadius: 20,
               pl: 2,
               pr: 0.5,
@@ -178,9 +167,9 @@ export function DriverAppLayout() {
               <Typography 
                 variant="caption" 
                 fontWeight="bold" 
-                color={isOnline ? 'success.main' : 'text.disabled'}
+                color={isOnline ? 'success.main' : 'black'}
               >
-                {isOnline ? '上線中' : '離線'}
+                {isOnline ? '上線中' : '未上線'}
               </Typography>
               <Switch
                 checked={isOnline}

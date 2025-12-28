@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -9,12 +9,6 @@ import {
   ToggleButton,
   Card,
   CardContent,
-  Tabs,
-  Tab,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
 } from '@mui/material';
 import {
   Person as RiderIcon,
@@ -24,22 +18,16 @@ import {
 import { useAuthStore } from '../../stores/auth.store';
 import { useDriverStore } from '../../stores/driver.store';
 import { driverApi } from '../../api/driver.api';
-import type { UserRole, VehicleType } from '../../types';
+import type { UserRole } from '../../types';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuthStore();
   const { setDriver } = useDriverStore();
 
   const [role, setRole] = useState<UserRole>('rider');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  
-  // 司機額外欄位
-  const [driverTab, setDriverTab] = useState(0); // 0: 登入, 1: 註冊
-  const [vehiclePlate, setVehiclePlate] = useState('');
-  const [vehicleType, setVehicleType] = useState<VehicleType>('STANDARD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -83,7 +71,7 @@ export function LoginPage() {
       // 如果失敗，使用 Demo 模式
       try {
         // 嘗試取得司機資訊
-        const response = await driverApi.getOffers(driverId);
+        await driverApi.getDriver(driverId);
         // 如果成功，表示司機存在
       } catch (err) {
         // 司機不存在或 API 失敗，使用 Demo 模式
@@ -104,58 +92,10 @@ export function LoginPage() {
         busy: false,
       });
 
+
       navigate('/driver/dashboard', { replace: true });
     } catch (err) {
       setError('登入失敗，請重試');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 司機註冊
-  const handleDriverRegister = async () => {
-    if (!phone || !name || !vehiclePlate) {
-      setError('請填寫所有必填欄位');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    const driverId = `driver-${phone}`;
-
-    try {
-      // 嘗試向後端註冊
-      const response = await driverApi.register({
-        phone,
-        name,
-        vehiclePlate,
-        vehicleType,
-      });
-
-      if (response.data.success && response.data.data) {
-        const driver = response.data.data;
-        
-        login(driver.driverId, driver.name, 'driver', driver.phone);
-        setDriver(driver);
-        navigate('/driver/dashboard', { replace: true });
-      }
-    } catch (err: any) {
-      // 如果後端註冊失敗，使用 Demo 模式
-      console.log('後端註冊失敗，使用 Demo 模式');
-      
-      login(driverId, name, 'driver', phone);
-      setDriver({
-        driverId,
-        name,
-        phone,
-        vehiclePlate,
-        vehicleType,
-        status: 'OFFLINE',
-        busy: false,
-      });
-
-      navigate('/driver/dashboard', { replace: true });
     } finally {
       setLoading(false);
     }
@@ -242,114 +182,42 @@ export function LoginPage() {
             </>
           )}
 
-          {/* 司機 - 登入/註冊 */}
+          {/* 司機 - 僅登入 (帳號由後台建立) */}
           {role === 'driver' && (
             <>
-              <Tabs
-                value={driverTab}
-                onChange={(_, v) => {
-                  setDriverTab(v);
-                  setError('');
-                }}
-                sx={{ mb: 2 }}
-              >
-                <Tab label="登入" />
-                <Tab label="註冊" />
-              </Tabs>
-
               {error && (
                 <Typography color="error" variant="body2" sx={{ mb: 2 }}>
                   {error}
                 </Typography>
               )}
 
-              {/* 司機登入 */}
-              {driverTab === 0 && (
-                <>
-                  <TextField
-                    fullWidth
-                    label="手機號碼"
-                    placeholder="0912-345-678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    sx={{ mb: 2 }}
-                    data-testid="driver-phone"
-                  />
-                  <TextField
-                    fullWidth
-                    label="姓名 (選填)"
-                    placeholder="輸入您的姓名"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    sx={{ mb: 3 }}
-                  />
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    onClick={handleDriverLogin}
-                    disabled={!phone || loading}
-                    data-testid="btn-driver-login"
-                  >
-                    {loading ? '登入中...' : '司機登入'}
-                  </Button>
-                </>
-              )}
-
-              {/* 司機註冊 */}
-              {driverTab === 1 && (
-                <>
-                  <TextField
-                    fullWidth
-                    label="手機號碼 *"
-                    placeholder="0912-345-678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    sx={{ mb: 2 }}
-                    required
-                  />
-                  <TextField
-                    fullWidth
-                    label="姓名 *"
-                    placeholder="輸入您的姓名"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    sx={{ mb: 2 }}
-                    required
-                  />
-                  <TextField
-                    fullWidth
-                    label="車牌號碼 *"
-                    placeholder="ABC-1234"
-                    value={vehiclePlate}
-                    onChange={(e) => setVehiclePlate(e.target.value)}
-                    sx={{ mb: 2 }}
-                    required
-                  />
-                  <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>車種 *</InputLabel>
-                    <Select
-                      value={vehicleType}
-                      label="車種 *"
-                      onChange={(e) => setVehicleType(e.target.value as VehicleType)}
-                    >
-                      <MenuItem value="STANDARD">🚗 菁英</MenuItem>
-                      <MenuItem value="PREMIUM">🚘 尊榮</MenuItem>
-                      <MenuItem value="XL">🚐 大型</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    onClick={handleDriverRegister}
-                    disabled={!phone || !name || !vehiclePlate || loading}
-                    data-testid="btn-driver-register"
-                  >
-                    {loading ? '註冊中...' : '註冊成為司機'}
-                  </Button>
-                </>
-              )}
+              <TextField
+                fullWidth
+                label="手機號碼"
+                placeholder="0912-345-678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                sx={{ mb: 2 }}
+                data-testid="driver-phone"
+              />
+              <TextField
+                fullWidth
+                label="姓名 (選填)"
+                placeholder="輸入您的姓名"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                sx={{ mb: 3 }}
+              />
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleDriverLogin}
+                disabled={!phone || loading}
+                data-testid="btn-driver-login"
+              >
+                {loading ? '登入中...' : '司機登入'}
+              </Button>
             </>
           )}
         </CardContent>

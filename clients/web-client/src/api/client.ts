@@ -28,6 +28,7 @@ apiClient.interceptors.response.use(
       case 401:
         // Token 過期，清除並導向登入
         localStorage.removeItem('token');
+        alert('登入已過期，請重新登入');
         window.location.href = '/login';
         break;
       case 403:

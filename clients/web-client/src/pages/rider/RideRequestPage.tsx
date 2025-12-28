@@ -1,20 +1,29 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  TextField,
   Button,
-  Card,
-  CardContent,
-  ToggleButtonGroup,
-  ToggleButton,
-  Divider,
+  Paper,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Avatar,
+  Divider,
 } from '@mui/material';
+import {
+  LocationOn as LocationIcon, 
+  Flag as FlagIcon,
+  DirectionsCar as CarIcon,
+  LocalTaxi as TaxiIcon,
+  AirportShuttle as VanIcon,
+  ArrowBack as ArrowBackIcon,
+} from '@mui/icons-material';
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
-import { reverseGeocodeWithCache } from '../../api/geocoding.api';
 import { getRouteWithCache } from '../../api/routing.api';
 import { useAuthStore } from '../../stores/auth.store';
 import { orderApi } from '../../api/order.api';
@@ -24,24 +33,25 @@ export function RideRequestPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  // 從 sessionStorage 讀取上車點
+  // 1. 從 sessionStorage 讀取上車點與下車點 (修復下車點丟失問題)
   const savedPickup = sessionStorage.getItem('pickupLocation');
   const savedPickupAddress = sessionStorage.getItem('pickupAddress');
+  const savedDropoff = sessionStorage.getItem('dropoffLocation');
+  const savedDropoffAddress = sessionStorage.getItem('dropoffAddress');
 
-  const [pickupLocation, setPickupLocation] = useState<MapLocation | null>(
-    savedPickup ? JSON.parse(savedPickup) : { lat: 24.1618, lng: 120.6469 }
+  const [pickupLocation] = useState<MapLocation | null>(
+    savedPickup ? JSON.parse(savedPickup) : null
   );
-  const [pickupAddress, setPickupAddress] = useState(
-    savedPickupAddress || '台中市西屯區市政路100號'
-  );
+  const [pickupAddress] = useState(savedPickupAddress || '未知上車點');
   
-  const [dropoffLocation, setDropoffLocation] = useState<MapLocation | null>(null);
-  const [dropoffAddress, setDropoffAddress] = useState('');
+  const [dropoffLocation] = useState<MapLocation | null>(
+    savedDropoff ? JSON.parse(savedDropoff) : null
+  );
+  const [dropoffAddress] = useState(savedDropoffAddress || '選取下車點');
   
   const [vehicleType, setVehicleType] = useState<VehicleType>('STANDARD');
   const [loading, setLoading] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
-  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [isSelectingVehicle, setIsSelectingVehicle] = useState(false); // 控制是否顯示車種選擇
   
   // 路徑相關狀態
   const [routePath, setRoutePath] = useState<MapLocation[]>([]);
@@ -61,60 +71,20 @@ export function RideRequestPage() {
           console.error('路徑規劃失敗:', error);
           setRoutePath([]);
         });
-    } else {
-      setRoutePath([]);
-      setRouteDistance(0);
-      setRouteDuration(0);
     }
   }, [pickupLocation, dropoffLocation]);
 
-  // 計算預估車資 - 使用真實距離
-  const calculateFare = () => {
-    if (!pickupLocation || !dropoffLocation) return 0;
+  // 計算特定車種的預估車資
+  const calculateFareForType = (type: VehicleType) => {
+    if (!routeDistance && (!pickupLocation || !dropoffLocation)) return 0;
     
-    const distanceKm = routeDistance > 0 
-      ? routeDistance / 1000  // 使用真實路徑距離
-      : Math.sqrt(
-          Math.pow((dropoffLocation.lat - pickupLocation.lat) * 111, 2) +
-          Math.pow((dropoffLocation.lng - pickupLocation.lng) * 111, 2)
-        );
+    // 如果沒有路徑距離，用直線距離估算
+    const dist = routeDistance > 0 ? routeDistance / 1000 : 3; 
     
-    const baseFare = vehicleType === 'STANDARD' ? 50 : vehicleType === 'PREMIUM' ? 80 : 100;
-    const perKmRate = vehicleType === 'STANDARD' ? 15 : vehicleType === 'PREMIUM' ? 25 : 30;
-    return Math.round(baseFare + distanceKm * perKmRate);
+    const baseFare = type === 'STANDARD' ? 50 : type === 'PREMIUM' ? 80 : 100;
+    const perKmRate = type === 'STANDARD' ? 15 : type === 'PREMIUM' ? 25 : 30;
+    return Math.round(baseFare + dist * perKmRate);
   };
-
-  const estimatedFare = calculateFare();
-
-  // 處理地圖中心變化 - 使用真實地址
-  const handleCenterChange = useCallback(async (location: MapLocation) => {
-    if (!selectionMode) return;
-
-    setIsLoadingAddress(true);
-    try {
-      const address = await reverseGeocodeWithCache(location.lat, location.lng);
-      
-      if (selectionMode === 'pickup') {
-        setPickupLocation(location);
-        setPickupAddress(address);
-      } else if (selectionMode === 'dropoff') {
-        setDropoffLocation(location);
-        setDropoffAddress(address);
-      }
-    } catch (error) {
-      console.error('地址查詢失敗:', error);
-      const fallbackAddress = `(${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})`;
-      if (selectionMode === 'pickup') {
-        setPickupLocation(location);
-        setPickupAddress(fallbackAddress);
-      } else {
-        setDropoffLocation(location);
-        setDropoffAddress(fallbackAddress);
-      }
-    } finally {
-      setIsLoadingAddress(false);
-    }
-  }, [selectionMode]);
 
   const handleRequestRide = async () => {
     if (!user || !pickupLocation || !dropoffLocation) return;
@@ -129,11 +99,14 @@ export function RideRequestPage() {
       });
 
       if (response.data.success && response.data.data) {
-        // 存儲訂單資訊以便在等待頁面使用
+        // 存儲訂單資訊以便在等待頁面使用 (與 WaitingPage 初始化邏輯對齊)
         sessionStorage.setItem('currentOrderPickup', JSON.stringify(pickupLocation));
-        sessionStorage.setItem('currentOrderDropoff', JSON.stringify(dropoffLocation));
         sessionStorage.setItem('currentOrderPickupAddress', pickupAddress);
-        sessionStorage.setItem('currentOrderDropoffAddress', dropoffAddress);
+        if (dropoffLocation) {
+           sessionStorage.setItem('currentOrderDropoff', JSON.stringify(dropoffLocation));
+           sessionStorage.setItem('currentOrderDropoffAddress', dropoffAddress);
+        }
+        
         navigate(`/rider/waiting/${response.data.data.orderId}`);
       }
     } catch (error) {
@@ -146,177 +119,190 @@ export function RideRequestPage() {
 
   // 建立地圖標記
   const markers: MapMarker[] = [];
-  if (pickupLocation && selectionMode !== 'pickup') {
-    markers.push({ id: 'pickup', position: pickupLocation, type: 'pickup', label: '上車' });
-  }
-  if (dropoffLocation && selectionMode !== 'dropoff') {
-    markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車' });
-  }
+  if (pickupLocation) markers.push({ id: 'pickup', position: pickupLocation, type: 'pickup', label: '上車' });
+  if (dropoffLocation) markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車' });
 
-  // 地圖中心點
-  const mapCenter = selectionMode === 'dropoff' 
-    ? (dropoffLocation || pickupLocation || { lat: 24.1618, lng: 120.6469 })
-    : (pickupLocation || { lat: 24.1618, lng: 120.6469 });
+  // 計算地圖邊界：若有起終點，顯示兩者範圍
+  const mapBounds = useMemo(() => {
+    if (pickupLocation && dropoffLocation) {
+      return [pickupLocation, dropoffLocation] as [MapLocation, MapLocation];
+    }
+    return null;
+  }, [pickupLocation, dropoffLocation]);
+
+  // 如果在上一步剛選完下車點，地圖中心設在下車點或兩點之間
+  const mapCenter = pickupLocation || { lat: 24.1618, lng: 120.6469 };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* 地圖區域 - 使用 OpenStreetMap */}
-      <Box sx={{ height: 250, position: 'relative' }}>
-        <LeafletMap
-          center={mapCenter}
-          zoom={15}
-          markers={markers}
-          routePath={selectionMode ? [] : routePath}  // 選點模式時不顯示路徑
-          selectionMode={selectionMode}
-          showCenterPin={selectionMode !== null}
-          onCenterChange={handleCenterChange}
-        />
-      </Box>
-
-      {/* 表單區域 */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          叫車
-        </Typography>
-
-        {/* 地點輸入 */}
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', mr: 2 }} />
-              <TextField
-                fullWidth
-                value={pickupAddress}
-                onClick={() => setSelectionMode('pickup')}
-                InputProps={{ readOnly: true }}
-                placeholder="選擇上車地點"
-                size="small"
-                data-testid="input-pickup"
-              />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'error.main', mr: 2 }} />
-              <TextField
-                fullWidth
-                value={dropoffAddress}
-                onClick={() => setSelectionMode('dropoff')}
-                InputProps={{ readOnly: true }}
-                placeholder="選擇下車地點"
-                size="small"
-                data-testid="input-dropoff"
-              />
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* 選點模式確認按鈕 */}
-        {selectionMode && (
-          <Card sx={{ mb: 2, bgcolor: selectionMode === 'pickup' ? 'success.dark' : 'error.dark' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1, minHeight: 24 }}>
-                {isLoadingAddress ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: '#fff' }} />
-                    <Typography variant="body2" sx={{ color: '#fff' }}>
-                      查詢地址中...
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ color: '#fff' }}>
-                    {selectionMode === 'pickup' ? pickupAddress : dropoffAddress}
-                  </Typography>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setSelectionMode(null)}
-                  sx={{ flex: 1, color: '#fff', borderColor: '#fff' }}
-                >
-                  取消
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => setSelectionMode(null)}
-                  disabled={isLoadingAddress}
-                  sx={{ flex: 1, bgcolor: '#fff', color: '#000', '&:hover': { bgcolor: '#eee' } }}
-                >
-                  確認{selectionMode === 'pickup' ? '上車點' : '下車點'}
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 車種選擇 */}
-        {!selectionMode && (
-          <>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              選擇車種
-            </Typography>
-            <ToggleButtonGroup
-              value={vehicleType}
-              exclusive
-              onChange={(_, v) => v && setVehicleType(v)}
-              fullWidth
-              sx={{ mb: 2 }}
+    <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
+        {/* 頂部返回按鈕 (懸浮) */}
+        <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 1100 }}>
+            <Button 
+                variant="contained" 
+                color="inherit" 
+                sx={{ minWidth: 40, width: 40, height: 40, borderRadius: '50%', bgcolor: 'white', color: 'black' }}
+                onClick={() => {
+                    if (isSelectingVehicle) setIsSelectingVehicle(false);
+                    else navigate('/rider/home');
+                }}
             >
-              <ToggleButton value="STANDARD" data-testid="vehicle-standard">
-                🚗 菁英
-              </ToggleButton>
-              <ToggleButton value="PREMIUM" data-testid="vehicle-premium">
-                🚘 尊榮
-              </ToggleButton>
-              <ToggleButton value="XL" data-testid="vehicle-xl">
-                🚐 大型
-              </ToggleButton>
-            </ToggleButtonGroup>
-
-            {/* 路線資訊 */}
-            {dropoffLocation && (
-              <Card sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography color="text.secondary">預估距離</Typography>
-                    <Typography>
-                      {routeDistance > 0 
-                        ? `${(routeDistance / 1000).toFixed(1)} 公里` 
-                        : '計算中...'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography color="text.secondary">預估時間</Typography>
-                    <Typography>
-                      {routeDuration > 0 
-                        ? `${Math.ceil(routeDuration / 60)} 分鐘` 
-                        : '計算中...'}
-                    </Typography>
-                  </Box>
-                  <Divider sx={{ my: 1 }} />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography fontWeight="bold">預估車資</Typography>
-                    <Typography color="primary" fontWeight="bold" fontSize={20}>
-                      ${estimatedFare}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* 叫車按鈕 */}
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
-              onClick={handleRequestRide}
-              disabled={!pickupLocation || !dropoffLocation || loading}
-              data-testid="btn-request-ride"
-            >
-              {loading ? '正在呼叫司機...' : '確認叫車'}
+                <ArrowBackIcon />
             </Button>
-          </>
+        </Box>
+
+      {/* 全屏地圖 */}
+       <LeafletMap
+          center={mapCenter}
+          zoom={14}
+          markers={markers}
+          routePath={routePath}
+          bounds={mapBounds}
+       />
+
+      {/* 底部面板 */}
+      <Box sx={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        bgcolor: '#1a1a1a', 
+        borderRadius: '24px 24px 0 0',
+        zIndex: 1000,
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.5)',
+        transition: 'transform 0.3s ease',
+      }}>
+        {/* 初始狀態 (選取車種按鈕) */}
+        {!isSelectingVehicle ? (
+            <Box sx={{ p: 3 }}>
+                {/* 地址預覽 */}
+                <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', mr: 2 }} />
+                        <Typography color="white" fontWeight={500} noWrap>{pickupAddress}</Typography>
+                    </Box>
+                    <Box sx={{ ml: 0.5, borderLeft: '1px dashed #555', height: 16, mb: 1 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mr: 2 }} />
+                         {dropoffLocation ? (
+                             <Typography color="white" fontWeight={500} noWrap>{dropoffAddress}</Typography>
+                         ) : (
+                             <Typography color="grey.500">未設定下車點</Typography>
+                         )}
+                    </Box>
+                </Box>
+
+                <Button
+                 fullWidth
+                 variant="contained"
+                 size="large"
+                 onClick={() => setIsSelectingVehicle(true)}
+                 disabled={!dropoffLocation}
+                 sx={{ 
+                   py: 1.5, 
+                   fontSize: '1.1rem', 
+                   fontWeight: 'bold', 
+                   bgcolor: 'white', 
+                   color: 'black',
+                   '&:hover': { bgcolor: 'grey.200' },
+                   '&:disabled': { bgcolor: 'grey.800', color: 'grey.600' }
+                 }}
+                >
+                  選取車種
+                </Button>
+            </Box>
+        ) : (
+            // 車種選擇列表
+            <Box sx={{ p: 2 }}>
+                <Typography variant="h6" color="white" sx={{ mb: 2, px: 1, fontWeight: 'bold' }}>
+                    選擇車種
+                </Typography>
+                
+                <List sx={{ mb: 2 }}>
+                    <ListItem disablePadding sx={{ mb: 1 }}>
+                        <ListItemButton 
+                          selected={vehicleType === 'STANDARD'}
+                          onClick={() => setVehicleType('STANDARD')}
+                          sx={{ 
+                            borderRadius: 2, 
+                            border: '2px solid',
+                            borderColor: vehicleType === 'STANDARD' ? '#276ef1' : 'transparent',
+                            bgcolor: vehicleType === 'STANDARD' ? 'rgba(39, 110, 241, 0.1)' : 'transparent'
+                          }}
+                        >
+                            <ListItemIcon>
+                                <Avatar sx={{ bgcolor: 'transparent' }}><CarIcon sx={{ color: 'white', fontSize: 30 }} /></Avatar>
+                            </ListItemIcon>
+                            <ListItemText 
+                                primary={<Typography color="white" fontWeight="bold">UberX 菁英優步</Typography>}
+                                secondary={<Typography color="grey.400" variant="caption">最近</Typography>}
+                            />
+                            <Typography color="white" fontWeight="bold">${calculateFareForType('STANDARD')}</Typography>
+                        </ListItemButton>
+                    </ListItem>
+
+                    <ListItem disablePadding sx={{ mb: 1 }}>
+                        <ListItemButton 
+                          selected={vehicleType === 'PREMIUM'}
+                          onClick={() => setVehicleType('PREMIUM')}
+                          sx={{ 
+                            borderRadius: 2, 
+                            border: '2px solid',
+                            borderColor: vehicleType === 'PREMIUM' ? '#276ef1' : 'transparent',
+                            bgcolor: vehicleType === 'PREMIUM' ? 'rgba(39, 110, 241, 0.1)' : 'transparent'
+                          }}
+                        >
+                            <ListItemIcon>
+                                <Avatar sx={{ bgcolor: 'transparent' }}><TaxiIcon sx={{ color: 'white', fontSize: 30 }} /></Avatar>
+                            </ListItemIcon>
+                            <ListItemText 
+                                primary={<Typography color="white" fontWeight="bold">尊榮優步</Typography>}
+                                secondary={<Typography color="grey.400" variant="caption">高品質車輛</Typography>}
+                            />
+                            <Typography color="white" fontWeight="bold">${calculateFareForType('PREMIUM')}</Typography>
+                        </ListItemButton>
+                    </ListItem>
+                    
+                    <ListItem disablePadding>
+                        <ListItemButton 
+                          selected={vehicleType === 'XL'}
+                          onClick={() => setVehicleType('XL')}
+                          sx={{ 
+                            borderRadius: 2, 
+                            border: '2px solid',
+                            borderColor: vehicleType === 'XL' ? '#276ef1' : 'transparent',
+                            bgcolor: vehicleType === 'XL' ? 'rgba(39, 110, 241, 0.1)' : 'transparent'
+                          }}
+                        >
+                            <ListItemIcon>
+                                <Avatar sx={{ bgcolor: 'transparent' }}><VanIcon sx={{ color: 'white', fontSize: 30 }} /></Avatar>
+                            </ListItemIcon>
+                            <ListItemText 
+                                primary={<Typography color="white" fontWeight="bold">UberXL 大型</Typography>}
+                                secondary={<Typography color="grey.400" variant="caption">適合多人或行李</Typography>}
+                            />
+                            <Typography color="white" fontWeight="bold">${calculateFareForType('XL')}</Typography>
+                        </ListItemButton>
+                    </ListItem>
+                </List>
+
+                <Button
+                 fullWidth
+                 variant="contained"
+                 size="large"
+                 onClick={handleRequestRide}
+                 disabled={loading}
+                 sx={{ 
+                   py: 1.5, 
+                   fontSize: '1.1rem', 
+                   fontWeight: 'bold', 
+                   bgcolor: '#276ef1', 
+                   color: 'white',
+                   '&:hover': { bgcolor: '#1f54c4' }
+                 }}
+                >
+                  {loading ? '正在呼叫司機...' : '確認叫車'}
+                </Button>
+            </Box>
         )}
       </Box>
     </Box>

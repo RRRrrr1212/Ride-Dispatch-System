@@ -90,7 +90,7 @@ export function CompletedPage() {
   }
 
   return (
-    <Box sx={{ p: 2, textAlign: 'center' }}>
+    <Box sx={{ p: 2, pb: 6, textAlign: 'center', minHeight: '100%' }}>
       {/* 完成圖示 */}
       <CheckIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
       <Typography variant="h5" sx={{ mb: 1 }}>
@@ -149,7 +149,16 @@ export function CompletedPage() {
       <Button
         fullWidth
         variant="contained"
-        onClick={() => navigate('/rider/home')}
+        sx={{ position: 'relative', zIndex: 10, mb: 4 }}
+        onClick={() => {
+          // 清除所有訂單相關狀態
+          sessionStorage.removeItem('activeOrderId');
+          sessionStorage.removeItem('currentOrderPickup');
+          sessionStorage.removeItem('currentOrderDropoff');
+          sessionStorage.removeItem('currentOrderPickupAddress');
+          sessionStorage.removeItem('currentOrderDropoffAddress');
+          navigate('/rider/home');
+        }}
       >
         返回首頁
       </Button>
