@@ -70,6 +70,8 @@
 | `COMPLETED` | 任何動作 | 終態不可變更 |
 | `CANCELLED` | 任何動作 | 終態不可變更 |
 
+> **備註**: 管理員 `force-cancel` 為特殊操作，可強制將非終態訂單轉為 `CANCELLED`，以解決系統卡單問題。
+
 ---
 
 ## 3. 各動作規格 (Action Specifications)

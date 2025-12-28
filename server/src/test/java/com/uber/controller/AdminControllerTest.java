@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.dto.*;
 import com.uber.model.*;
 import com.uber.service.*;
+import com.uber.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +49,24 @@ class AdminControllerTest {
 
     @MockBean
     private FareService fareService;
+
+    @MockBean
+    private PassengerService passengerService;
+
+    @MockBean
+    private RiderService riderService;
+
+    @MockBean
+    private OrderRepository orderRepository;
+
+    @MockBean
+    private DriverRepository driverRepository;
+
+    @MockBean
+    private AuditLogRepository auditLogRepository;
+
+    @MockBean
+    private RiderRepository riderRepository;
 
     private Order sampleOrder;
     private Driver sampleDriver;
