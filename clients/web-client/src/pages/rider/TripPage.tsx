@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -28,6 +28,13 @@ export function TripPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [driverPosition, setDriverPosition] = useState<MapLocation | null>(null);
   const [tripPath, setTripPath] = useState<MapLocation[] | null>(null);
+  const [driverStopped, setDriverStopped] = useState(false); // 司機是否已停止
+  const lastPositionsRef = useRef<MapLocation[]>([]); // 追蹤最近位置
+  
+  // 地圖控制
+  const [autoCenter, setAutoCenter] = useState(true);
+  const handleMapInteraction = () => setAutoCenter(false);
+  const handleRecenter = () => setAutoCenter(true);
 
   // 地圖相關狀態
   const savedPickup = sessionStorage.getItem('currentOrderPickup');
@@ -90,14 +97,45 @@ export function TripPage() {
           const o = response.data.data;
           setOrder(o);
 
-          // 1. 同步真實司機位置 (支援 {x, y} 或 {lat, lng} 格式)
+          // 1. 同步真實司機位置 (後端 Location: x=lat, y=lng)
           const orderData = o as any;
           if (orderData.driverLocation) {
             const dl = orderData.driverLocation;
-            const lat = Number(dl.lat ?? dl.x);
-            const lng = Number(dl.lng ?? dl.y);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              setDriverPosition({ lat, lng });
+            // 後端 Location: x=緯度(lat), y=經度(lng)
+            let lat: number, lng: number;
+            if (dl.lat !== undefined && dl.lng !== undefined) {
+              lat = Number(dl.lat);
+              lng = Number(dl.lng);
+            } else {
+              // x = latitude (緯度), y = longitude (經度)
+              lat = Number(dl.x);
+              lng = Number(dl.y);
+            }
+            
+            // 驗證座標合理性 (台中附近: lat ~24, lng ~120)
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat < 90 && lng > 90) {
+              const newPos = { lat, lng };
+              setDriverPosition(newPos);
+              
+              // 檢測司機是否停止移動
+              const positions = lastPositionsRef.current;
+              positions.push(newPos);
+              if (positions.length > 3) positions.shift();
+              
+              if (positions.length >= 3) {
+                const isStationary = positions.every((pos, i) => {
+                  if (i === 0) return true;
+                  const prev = positions[i - 1];
+                  const dist = Math.sqrt(
+                    Math.pow((pos.lat - prev.lat) * 111000, 2) +
+                    Math.pow((pos.lng - prev.lng) * 111000 * Math.cos(pos.lat * Math.PI / 180), 2)
+                  );
+                  return dist < 15; // 15 公尺
+                });
+                setDriverStopped(isStationary);
+              }
+            } else {
+              console.warn('[TripPage-Rider] 無效的司機位置:', dl, '解析: lat=', lat, 'lng=', lng);
             }
           } else if (!driverPosition && pickupLocation) {
             // Fallback: 如果後端未回報位置，用上車點附近的估計位置
@@ -148,7 +186,7 @@ export function TripPage() {
     };
 
     poll();
-    const timer = setInterval(poll, 2000);
+    const timer = setInterval(poll, 1000); // 每秒更新一次
     return () => clearInterval(timer);
   }, [orderId, navigate, pickupLocation, dropoffLocation, tripPath]);
 
@@ -172,6 +210,9 @@ export function TripPage() {
         markers={markers}
         routePath={tripPath || undefined}
         driverPosition={currentCarPos}
+        onMapClick={handleMapInteraction}
+        onCenterChange={handleMapInteraction}
+        disableAutoCenter={!autoCenter}
       />
 
       {/* 頂部狀態指示器 (與司機端風格一致) */}
@@ -196,7 +237,13 @@ export function TripPage() {
           
         }}>
            <Typography variant="body2" fontWeight="bold">
-             {eta ? `${eta.mins} 分鐘後到達` : '計算中...'}
+             {driverStopped ? (
+               <span style={{ color: '#4ade80' }}>司機已到達</span>
+             ) : eta ? (
+               `${eta.mins} 分鐘後到達`
+             ) : (
+               '計算中...'
+             )}
            </Typography>
         </Paper>
       </Box>
@@ -222,9 +269,17 @@ export function TripPage() {
          <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
-                   <Typography variant="h5" color="white" fontWeight="bold">行程進行中</Typography>
+                   <Typography variant="h5" color="white" fontWeight="bold">
+                     {driverStopped ? '已到達目的地' : '行程進行中'}
+                   </Typography>
                    <Typography variant="body2" color="grey.400">
-                      {eta ? `預計 ${eta.mins} 分鐘後到達` : '正規劃路線...'}
+                     {driverStopped ? (
+                       <span style={{ color: '#4ade80' }}>請下車，祝您旅途愉快！</span>
+                     ) : eta ? (
+                       `預計 ${eta.mins} 分鐘後到達`
+                     ) : (
+                       '正規劃路線...'
+                     )}
                    </Typography>
                 </Box>
                 <Avatar sx={{ width: 56, height: 56, bgcolor: '#333' }}>

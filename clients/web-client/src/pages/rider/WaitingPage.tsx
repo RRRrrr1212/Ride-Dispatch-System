@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -31,6 +31,10 @@ export function WaitingPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [waitingTime, setWaitingTime] = useState(0); 
   const [driverPosition, setDriverPosition] = useState<MapLocation | null>(null); // 真實司機位置
+  const [driverStopped, setDriverStopped] = useState(false); // 司機是否已停止
+  
+  // 追蹤最近的司機位置用於檢測停止
+  const lastPositionsRef = useRef<MapLocation[]>([]);
   
   // 地圖相關狀態 (從 Session 恢復)
   const savedPickup = sessionStorage.getItem('currentOrderPickup');
@@ -46,6 +50,18 @@ export function WaitingPage() {
   const [pickupAddress] = useState(savedPickupAddress || '');
 
   const [manualFitBounds, setManualFitBounds] = useState(false); // 控制是否只使用手動縮放
+  const [autoCenter, setAutoCenter] = useState(true); // 控制是否自動置中
+  
+  // 當用戶拖動地圖時
+  const handleMapInteraction = () => {
+    setAutoCenter(false);
+  };
+  
+  // 恢復自動置中
+  const handleRecenter = () => {
+    setAutoCenter(true);
+    setManualFitBounds(false);
+  };
   
   // 等待計時器
   useEffect(() => {
@@ -75,22 +91,55 @@ export function WaitingPage() {
           const o = response.data.data;
           setOrder(o);
 
-          // 更新司機位置 (如果後端有回傳)
-          // 後端 Location 格式可能是 {x, y} (x=緯度, y=經度) 或 {lat, lng}
+          // 更新司機位置 (從後端獲取)
           const orderData = o as any;
           if (orderData.driverLocation) {
             const dl = orderData.driverLocation;
-            const lat = Number(dl.lat ?? dl.x);
-            const lng = Number(dl.lng ?? dl.y);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              setDriverPosition({ lat, lng });
+            // 後端 Location: x=緯度(lat), y=經度(lng) 
+            // 前端 MapLocation: lat=緯度, lng=經度
+            let lat: number, lng: number;
+            if (dl.lat !== undefined && dl.lng !== undefined) {
+              lat = Number(dl.lat);
+              lng = Number(dl.lng);
+            } else {
+              // x = latitude (緯度), y = longitude (經度)
+              lat = Number(dl.x);
+              lng = Number(dl.y);
+            }
+            
+            // 驗證座標合理性 (台中附近: lat ~24, lng ~120)
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat < 90 && lng > 90) {
+              const newPos = { lat, lng };
+              setDriverPosition(newPos);
+              
+              // 檢測司機是否停止移動
+              const positions = lastPositionsRef.current;
+              positions.push(newPos);
+              if (positions.length > 3) positions.shift(); // 只保留最近 3 個
+              
+              // 如果有 3 個位置且變化都小於 15 公尺，認為已停止
+              if (positions.length >= 3) {
+                const isStationary = positions.every((pos, i) => {
+                  if (i === 0) return true;
+                  const prev = positions[i - 1];
+                  const dist = Math.sqrt(
+                    Math.pow((pos.lat - prev.lat) * 111000, 2) +
+                    Math.pow((pos.lng - prev.lng) * 111000 * Math.cos(pos.lat * Math.PI / 180), 2)
+                  );
+                  return dist < 15; // 15 公尺
+                });
+                setDriverStopped(isStationary);
+              }
+            } else {
+              console.warn('[WaitingPage] 無效的司機位置:', dl, '解析結果: lat=', lat, 'lng=', lng);
             }
           } else if (o.status === 'ACCEPTED' && !driverPosition && pickupLocation) {
-             // 如果還沒有真實位置，可以用一個附近的假位置初始化
-             setDriverPosition({
-               lat: pickupLocation.lat + 0.005,
-               lng: pickupLocation.lng + 0.005
-             });
+             // 後端沒有位置，用上車點附近作為初始估計
+             // 這通常表示司機還沒開始回報位置
+             const estimatedLat = pickupLocation.lat + (Math.random() - 0.5) * 0.01;
+             const estimatedLng = pickupLocation.lng + (Math.random() - 0.5) * 0.01;
+             setDriverPosition({ lat: estimatedLat, lng: estimatedLng });
+             console.log('[WaitingPage] 使用估計位置 (後端無位置):', estimatedLat, estimatedLng);
           }
 
           // 狀態導航
@@ -114,7 +163,7 @@ export function WaitingPage() {
     };
 
     poll(); // 立即執行一次
-    const timer = setInterval(poll, 2000); //每 2 秒更新一次
+    const timer = setInterval(poll, 1000); // 每秒更新一次
     return () => clearInterval(timer);
   }, [orderId, navigate, pickupLocation, driverPosition]);
 
@@ -142,22 +191,38 @@ export function WaitingPage() {
     markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車點' });
   }
 
-  // 根據司機位置和上車點顯示距離估算
-  // 這裡簡單計算直線距離
-  // 根據司機位置和上車點顯示距離估算
-  const getSimulatedArrivalMinutes = () => {
-    if (driverPosition && pickupLocation) {
-      const dx = driverPosition.lat - pickupLocation.lat;
-      const dy = driverPosition.lng - pickupLocation.lng;
-      const distKm = Math.sqrt(dx*dx + dy*dy) * 111; // km
-      
-      // 如果距離異常大 (> 50km)，可能還沒同步位置，顯示預設值或 "..."
-      if (distKm > 50) return -1; // 表示異常
+  // 計算兩點間的距離 (公尺) - Haversine
+  const calculateDistance = (p1: MapLocation, p2: MapLocation): number => {
+    const R = 6371e3; 
+    const φ1 = p1.lat * Math.PI/180;
+    const φ2 = p2.lat * Math.PI/180;
+    const Δφ = (p2.lat-p1.lat) * Math.PI/180;
+    const Δλ = (p2.lng-p1.lng) * Math.PI/180;
+    const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
 
-      return Math.ceil(distKm / 0.5 * 60); // 假設時速 30km/h => 0.5km/min
+  // 根據司機當前位置和上車點顯示距離估算
+  // 這個函數會在每次 driverPosition 變化時被重新計算
+  const getSimulatedArrivalMinutes = () => {
+    // 使用司機當前位置到上車點的實時距離
+    if (driverPosition && pickupLocation) {
+      const distM = calculateDistance(driverPosition, pickupLocation);
+      
+      // 如果距離太遠 (> 50km)，可能是位置錯誤
+      if (distM > 50000) return -1;
+      
+      // 假設市區均速 30km/h = 500m/min
+      // 直線距離乘以 1.3 係數來模擬實際道路距離
+      const estimatedDistM = distM * 1.3;
+      const mins = Math.ceil(estimatedDistM / 500);
+      
+      // 最少顯示 1 分鐘
+      return Math.max(1, mins);
     }
-    return 3;
-  }
+    return -1; // 當資料不足時
+  };
 
   // 計算地圖邊界
   const mapBounds = useMemo(() => {
@@ -175,27 +240,37 @@ export function WaitingPage() {
 
   const [routePath, setRoutePath] = useState<MapLocation[] | null>(null);
 
-  // 當司機已接單，規劃 司機 -> 上車點 的路徑
+  // 路徑同步：優先使用後端回傳的司機路徑，否則嘗試本地計算
   useEffect(() => {
-    if (order?.status === 'ACCEPTED' && driverPosition && pickupLocation) {
-      // 避免位置過遠時請求路徑 (減少 API 壓力)
-      const dx = driverPosition.lat - pickupLocation.lat;
-      const dy = driverPosition.lng - pickupLocation.lng;
-      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) { // 粗略檢查
-          setRoutePath(null);
-          return;
+    // 1. 如果後端有路徑，直接使用
+    if (order?.routePathJson) {
+      try {
+        const path = JSON.parse(order.routePathJson);
+        // 格式轉換 [lat, lng] -> {lat, lng}
+        const formattedPath = path.map((p: any) => ({ lat: p[0], lng: p[1] }));
+        setRoutePath(formattedPath);
+        return;
+      } catch (e) {
+        console.error('路徑解析失敗', e);
       }
+    }
 
-      getRouteWithCache(driverPosition, pickupLocation)
-        .then(route => setRoutePath(route.coordinates))
-        .catch(err => {
-            console.warn('路徑規劃失敗:', err);
-            setRoutePath(null);
-        });
+    // 2. 如果沒有後端路徑，但在 ACCEPTED 狀態且有位置，本地計算 (Fallback)
+    if (order?.status === 'ACCEPTED' && driverPosition && pickupLocation) {
+        const dx = driverPosition.lat - pickupLocation.lat;
+        const dy = driverPosition.lng - pickupLocation.lng;
+        // 檢查距離是否合理 (< 50km)，避免過遠請求
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+             getRouteWithCache(driverPosition, pickupLocation)
+                .then(route => setRoutePath(route.coordinates))
+                .catch(() => setRoutePath(null));
+        } else {
+             setRoutePath(null);
+        }
     } else {
       setRoutePath(null);
     }
-  }, [order?.status, driverPosition, pickupLocation]);
+  }, [order?.routePathJson, order?.status, driverPosition, pickupLocation]);
 
   return (
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -208,7 +283,9 @@ export function WaitingPage() {
         routePath={routePath || undefined}
         bounds={mapBounds}
         bottomOffset={280}
-        onMapClick={() => setManualFitBounds(true)}
+        onMapClick={handleMapInteraction}
+        onCenterChange={handleMapInteraction}
+        disableAutoCenter={!autoCenter}
       />
 
        {/* 右側地圖控制按鈕 (全覽視角) */}
@@ -219,7 +296,7 @@ export function WaitingPage() {
         zIndex: 1000,
       }}>
          <IconButton 
-           onClick={handleFitBounds}
+           onClick={handleRecenter}
            sx={{ 
              bgcolor: 'white', 
              color: 'black',
@@ -315,9 +392,14 @@ export function WaitingPage() {
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
-                  <Typography variant="caption" color="grey.500">司機將在</Typography>
+                  <Typography variant="caption" color="grey.500">
+                    {driverStopped ? '司機狀態' : '司機將在'}
+                  </Typography>
                   <Typography variant="h3" fontWeight="bold" color="white">
                      {(() => {
+                        if (driverStopped) {
+                          return <span style={{ color: '#4ade80' }}>已到達</span>;
+                        }
                         const mins = getSimulatedArrivalMinutes();
                         return mins === -1 ? (
                             <span style={{ fontSize: '1.5rem' }}>位置同步中...</span>

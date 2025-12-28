@@ -244,6 +244,7 @@ export function RideRequestPage() {
                                 secondary={<Typography color="grey.400" variant="caption">最近</Typography>}
                             />
                             <Typography color="white" fontWeight="bold">${calculateFareForType('STANDARD')}</Typography>
+                            <Typography variant="caption" color="grey.500" sx={{ display: 'block', fontSize: '0.7rem', textAlign: 'right' }}>預估金額</Typography>
                         </ListItemButton>
                     </ListItem>
 
@@ -266,6 +267,7 @@ export function RideRequestPage() {
                                 secondary={<Typography color="grey.400" variant="caption">高品質車輛</Typography>}
                             />
                             <Typography color="white" fontWeight="bold">${calculateFareForType('PREMIUM')}</Typography>
+                            <Typography variant="caption" color="grey.500" sx={{ display: 'block', fontSize: '0.7rem', textAlign: 'right' }}>預估金額</Typography>
                         </ListItemButton>
                     </ListItem>
                     
@@ -288,6 +290,7 @@ export function RideRequestPage() {
                                 secondary={<Typography color="grey.400" variant="caption">適合多人或行李</Typography>}
                             />
                             <Typography color="white" fontWeight="bold">${calculateFareForType('XL')}</Typography>
+                            <Typography variant="caption" color="grey.500" sx={{ display: 'block', fontSize: '0.7rem', textAlign: 'right' }}>預估金額</Typography>
                         </ListItemButton>
                     </ListItem>
                 </List>

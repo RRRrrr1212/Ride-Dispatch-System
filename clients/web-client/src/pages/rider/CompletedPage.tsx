@@ -104,7 +104,11 @@ export function CompletedPage() {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h4" color="primary" sx={{ mb: 2 }}>
-            ${order?.fare || order?.estimatedFare || 0}
+            ${(() => {
+              // 優先使用 fare (完成後的實際費用)，其次是 actualFare，最後是 estimatedFare
+              const fare = (order as any)?.fare || order?.actualFare || order?.estimatedFare || 0;
+              return typeof fare === 'number' ? fare.toFixed(0) : fare;
+            })()}
           </Typography>
 
           <Divider sx={{ my: 2 }} />
@@ -121,11 +125,21 @@ export function CompletedPage() {
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography color="text.secondary">距離</Typography>
-              <Typography>{order?.distance || '5.2'} km</Typography>
+              <Typography>{(() => {
+                // 後端回傳 estimatedDistance (公里)
+                const dist = (order as any)?.estimatedDistance || order?.distance;
+                return dist ? Number(dist).toFixed(2) : '-';
+              })()} km</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography color="text.secondary">時長</Typography>
-              <Typography>{order?.duration || '15'} 分鐘</Typography>
+              <Typography>{(() => {
+                // duration 是秒數，轉換為分鐘
+                const dur = order?.duration;
+                if (!dur) return '-';
+                const mins = Math.ceil(Number(dur) / 60);
+                return mins > 0 ? mins : 1;
+              })()} 分鐘</Typography>
             </Box>
           </Box>
         </CardContent>

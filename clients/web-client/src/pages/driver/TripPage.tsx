@@ -89,7 +89,55 @@ export function TripPage() {
   
   // 路徑與動畫狀態
   const [currentPath, setCurrentPath] = useState<MapLocation[] | null>(null);
-  const [driverInitialLocation] = useState<MapLocation>({ lat: 24.16, lng: 120.64 });
+  
+  // 初始化司機位置 - 優先從 sessionStorage 讀取（接單時存的）
+  const getInitialDriverLocation = (): MapLocation => {
+    // 1. 嘗試從 sessionStorage 讀取（接單時存的位置）
+    const savedLocation = sessionStorage.getItem('driverCurrentLocation');
+    if (savedLocation) {
+      try {
+        const loc = JSON.parse(savedLocation);
+        if (loc.lat && loc.lng) {
+          console.log('[TripPage] 從 sessionStorage 讀取司機位置:', loc);
+          return { lat: Number(loc.lat), lng: Number(loc.lng) };
+        }
+      } catch (e) {
+        console.warn('解析 sessionStorage 位置失敗', e);
+      }
+    }
+    
+    // 2. 從 driver.location 讀取
+    if (driver?.location) {
+      const loc = driver.location as any;
+      const lat = Number(loc.lat ?? loc.x);
+      const lng = Number(loc.lng ?? loc.y);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+        console.log('[TripPage] 從 driver.location 讀取:', lat, lng);
+        return { lat, lng };
+      }
+    }
+    
+    // 3. 預設值（台中市政府）- 最後手段
+    console.log('[TripPage] 使用預設位置');
+    return { lat: 24.1618, lng: 120.6469 };
+  };
+  
+  const [driverInitialLocation, setDriverInitialLocation] = useState<MapLocation>(getInitialDriverLocation);
+
+  // 如果 driver 資料載入後有更好的位置，更新它
+  useEffect(() => {
+    // 如果 sessionStorage 沒有位置但 driver.location 有，使用 driver.location
+    const savedLocation = sessionStorage.getItem('driverCurrentLocation');
+    if (!savedLocation && driver?.location) {
+      const loc = driver.location as any;
+      const lat = Number(loc.lat ?? loc.x);
+      const lng = Number(loc.lng ?? loc.y);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+        setDriverInitialLocation({ lat, lng });
+      }
+    }
+  }, [driver]);
+
   const [simulationStartIndex, setSimulationStartIndex] = useState(0); 
   const [manualFitBounds, setManualFitBounds] = useState(false); // 控制是否只使用手動縮放
 
@@ -162,17 +210,28 @@ export function TripPage() {
   }, [animatedDriverPos, order?.status, pickupLocation, dropoffLocation]);
 
   // 定期回報位置給伺服器 (每 2 秒)
+  // 使用 ref 追蹤最新位置，避免 useEffect 因位置變化而重建 timer
+  const latestDriverPosRef = useRef<MapLocation | null>(null);
+  
+  // 當位置變化時更新 ref
   useEffect(() => {
-    if (!driver || !animatedDriverPos) return;
+    latestDriverPosRef.current = animatedDriverPos;
+  }, [animatedDriverPos]);
+  
+  // 定時上傳位置 (只依賴 driver，不依賴 position)
+  useEffect(() => {
+    if (!driver) return;
     
-    // 簡單限流
     const timer = setInterval(() => {
-         driverApi.updateLocation(driver.driverId, animatedDriverPos.lat, animatedDriverPos.lng)
-           .catch(err => console.error('位置回報失敗', err));
-    }, 2000);
+      const pos = latestDriverPosRef.current;
+      if (pos) {
+        driverApi.updateLocation(driver.driverId, pos.lat, pos.lng)
+          .catch(err => console.error('位置回報失敗', err));
+      }
+    }, 1000); // 每秒上傳一次
 
     return () => clearInterval(timer);
-  }, [driver, animatedDriverPos]);
+  }, [driver]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -273,36 +332,62 @@ export function TripPage() {
     }
   }, [order?.status, pickupLocation, driverInitialLocation]);
 
+  // 視角控制
+  const [autoCenter, setAutoCenter] = useState(true);
+
   // 當狀態變為 ONGOING 時，計算路徑前往目的地
   useEffect(() => {
-    if (order?.status === 'ONGOING' && pickupLocation && dropoffLocation && !hasStartedToDropoffRef.current) {
-        hasStartedToDropoffRef.current = true;
-        
-        // 重置動畫計時器
-        const key = `trip_sim_start_${orderId}`;
-        localStorage.setItem(key, Date.now().toString());
-        setSimulationStartIndex(0);
+    if (order?.status === 'ONGOING' && pickupLocation && dropoffLocation) {
+        if (!hasStartedToDropoffRef.current || !currentPath) {
+             hasStartedToDropoffRef.current = true;
+             
+             const key = `trip_sim_start_${orderId}`;
+             if (!localStorage.getItem(key)) {
+                localStorage.setItem(key, Date.now().toString());
+                setSimulationStartIndex(0);
+             }
 
-        getRouteWithCache(pickupLocation, dropoffLocation)
-          .then(route => {
-             setCurrentPath(route.coordinates);
-             // 上傳路徑到後端
-             if (orderId) {
-               const routeJson = JSON.stringify(route.coordinates.map(c => [c.lat, c.lng]));
-               orderApi.updateRoute(orderId, routeJson).catch(console.warn);
-             }
-          })
-          .catch(err => {
-             console.warn('Path error (fallback to straight line)', err);
-             const fallbackPath = [pickupLocation, dropoffLocation];
-             setCurrentPath(fallbackPath);
-             if (orderId) {
-               const routeJson = JSON.stringify(fallbackPath.map(c => [c.lat, c.lng]));
-               orderApi.updateRoute(orderId, routeJson).catch(console.warn);
-             }
-          });
+             console.log('Calculating route: Pickup -> Dropoff', pickupLocation, dropoffLocation);
+
+             getRouteWithCache(pickupLocation, dropoffLocation)
+              .then(route => {
+                 setCurrentPath(route.coordinates);
+                 if (orderId) {
+                   const routeJson = JSON.stringify(route.coordinates.map(c => [c.lat, c.lng]));
+                   orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+                 }
+              })
+              .catch(err => {
+                 console.warn('Path error', err);
+                 const fallbackPath = [pickupLocation, dropoffLocation];
+                 setCurrentPath(fallbackPath);
+                 if (orderId) {
+                   const routeJson = JSON.stringify(fallbackPath.map(c => [c.lat, c.lng]));
+                   orderApi.updateRoute(orderId, routeJson).catch(console.warn);
+                 }
+              });
+        }
     }
-  }, [order?.status, pickupLocation, dropoffLocation]); // removed orderId
+  }, [order?.status, pickupLocation, dropoffLocation, currentPath]);
+
+  // 計算地圖中心點
+  const mapCenter = useMemo(() => {
+    // 如果手動控制中，就不強制更新中心，讓 LeafletMap 保持當前位置
+    // 但因為 LeafletMap 的 center prop 變化會觸發 setView，我們需要傳入 undefined 或保持不變
+    // 這裡的策略是：只在 autoCenter 為 true 時傳入司機位置
+    if (autoCenter && animatedDriverPos) return animatedDriverPos;
+    return undefined; // 讓 LeafletMap 自由控制
+  }, [autoCenter, animatedDriverPos]);
+
+  // 當用戶地圖操作時
+  const handleMapInteraction = () => {
+    setAutoCenter(false); // 停止自動跟隨
+  };
+
+  const handleRecenter = () => {
+    setAutoCenter(true);
+    setManualFitBounds(false);
+  };
 
   const handleStart = async () => {
     if (!orderId || !driver) return;
@@ -359,8 +444,7 @@ export function TripPage() {
     markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車' });
   }
 
-  // 地圖中心跟隨司機
-  const mapCenter = animatedDriverPos || driverInitialLocation;
+  // 地圖中心與自動填滿控制: autoCenter在上方已定義
 
   // 控制是否已經完成首次 fit bounds
   const [hasInitialFit, setHasInitialFit] = useState(false);
@@ -416,12 +500,9 @@ export function TripPage() {
         driverPosition={animatedDriverPos}
         bounds={mapBounds}
         bottomOffset={300}        
-        onCenterChange={() => {
-           // 當用戶移動地圖時 (透過 onCenterChange)，可以考慮切換到手動模式，但需避免誤觸
-           // 這裡暫時依賴 Fit Bounds 按鈕來控制
-        }}
-        // 加監聽器切換手動模式
-        onMapClick={() => setManualFitBounds(true)}
+        onCenterChange={handleMapInteraction}
+        onMapClick={handleMapInteraction}
+        disableAutoCenter={!autoCenter}
       />
 
       {/* 頂部左側選單按鈕 - 使用共用的 AppMenu */}
@@ -444,7 +525,7 @@ export function TripPage() {
         gap: 1
       }}>
          <IconButton 
-           onClick={handleFitBounds}
+           onClick={handleRecenter}
            sx={{ 
              bgcolor: 'white', 
              color: 'black',
@@ -478,7 +559,11 @@ export function TripPage() {
           justifyContent: 'center',
         }}>
            <Typography variant="body2" fontWeight="bold">
-              {etaInfo.distance > 1000 ? `${(etaInfo.distance/1000).toFixed(1)} km` : `${etaInfo.distance} m`} • {etaInfo.minutes} 分鐘
+             {canInteract ? (
+               <span style={{ color: '#4ade80' }}>✓ 已到達</span>
+             ) : (
+               <>{etaInfo.distance > 1000 ? `${(etaInfo.distance/1000).toFixed(1)} km` : `${etaInfo.distance} m`} • {etaInfo.minutes} 分鐘</>
+             )}
            </Typography>
         </Box>
       </Box>

@@ -34,6 +34,7 @@ interface LeafletMapProps {
   bounds?: MapLocation[] | null; // 多點邊界，可用於自動縮放包含所有點
   bottomOffset?: number; // 底部偏移量 (px)，用於適應底部 Sheet
   topOffset?: number;    // 頂部偏移量 (px)，用於避開頂部 UI (如司機狀態開關)
+  disableAutoCenter?: boolean; // 禁用自動置中，讓用戶可以自由拖動地圖
 }
 
 // 修復 Leaflet 預設圖標問題
@@ -45,9 +46,9 @@ L.Icon.Default.mergeOptions({
 });
 
 // 自定義圖標
-const createIcon = (color: string, emoji: string) => {
+const createIcon = (color: string, emoji: string, extraClassName: string = '') => {
   return L.divIcon({
-    className: 'custom-marker',
+    className: `custom-marker ${extraClassName}`.trim(),
     html: `
       <div style="
         background-color: ${color};
@@ -73,9 +74,9 @@ const createIcon = (color: string, emoji: string) => {
 // 各類型標記的圖標
 const pickupIcon = createIcon('#22c55e', 'P');
 const dropoffIcon = createIcon('#ef4444', 'D');
-const driverIcon = createIcon('#fbbf24', '🚗');
+const driverIcon = createIcon('#fbbf24', '🚗', 'driver-marker');
 const passengerIcon = createIcon('#3b82f6', '👤');
-const carIcon = createIcon('#f59e0b', '🚗');
+const carIcon = createIcon('#f59e0b', '🚗', 'driver-marker');
 
 // 用戶位置專屬圖標 - 藍色脈動效果
 const userIcon = L.divIcon({
@@ -159,16 +160,21 @@ function MapController({
   zoom,
   bounds,
   bottomOffset = 0,
+  disableAutoCenter = false,
 }: { 
   center: MapLocation; 
   zoom: number;
   bounds?: MapLocation[] | null;
   bottomOffset?: number;
+  disableAutoCenter?: boolean;
 }) {
   const map = useMap();
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
+    // 如果禁用了自動置中，直接返回
+    if (disableAutoCenter) return;
+
     // 優先處理邊界縮放 (fitBounds)
     if (bounds && bounds.length > 0) {
       const leafletBounds = L.latLngBounds(
@@ -199,7 +205,7 @@ function MapController({
     if (distance > 50) {
       map.setView([center.lat, center.lng], zoom);
     }
-  }, [map, center, zoom, bounds, bottomOffset]);
+  }, [map, center, zoom, bounds, bottomOffset, disableAutoCenter]);
 
   return null;
 }
@@ -270,6 +276,7 @@ export function LeafletMap({
   bounds,
   bottomOffset = 0,
   topOffset = 10,
+  disableAutoCenter = false,
 }: LeafletMapProps) {
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -337,7 +344,7 @@ export function LeafletMap({
         <MapEventHandler onMapClick={onMapClick} onCenterChange={onCenterChange} />
 
         {/* 地圖控制器 */}
-        <MapController center={center} zoom={zoom} bounds={bounds} bottomOffset={bottomOffset} />
+        <MapController center={center} zoom={zoom} bounds={bounds} bottomOffset={bottomOffset} disableAutoCenter={disableAutoCenter} />
 
         {/* 渲染路徑線 */}
         {routePath && routePath.length > 1 && (
