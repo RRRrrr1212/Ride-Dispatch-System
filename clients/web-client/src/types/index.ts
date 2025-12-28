@@ -40,6 +40,7 @@ export interface Order {
   cancelledAt?: string;
   cancelledBy?: string;
   cancelFee?: number;
+  routePathJson?: string; // 共享的路徑資料 (JSON string)
 }
 
 export interface CreateOrderRequest {

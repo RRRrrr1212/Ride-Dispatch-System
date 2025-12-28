@@ -242,7 +242,7 @@ export function DashboardPage() {
         setDriverLocation({ lat: latitude, lng: longitude });
         // 如果已上線，立即同步到後端 (雖然下面 watch 也會觸發，但為了保險)
         if (isOnline && driver) {
-             driverApi.updateLocation(driver.driverId, longitude, latitude).catch(console.error);
+             driverApi.updateLocation(driver.driverId, latitude, longitude).catch(console.error);
         }
       },
       console.error
@@ -276,9 +276,8 @@ export function DashboardPage() {
 
      const interval = setInterval(() => {
         // 使用當前的 driverLocation 上傳
-        // 由於 lat/lng 是 number，直接傳
-        // 注意 driverApi.updateLocation 參數順序是 (id, x/lng, y/lat)
-        driverApi.updateLocation(driver.driverId, driverLocation.lng, driverLocation.lat)
+        // 後端 Location: x=緯度(lat), y=經度(lng)
+        driverApi.updateLocation(driver.driverId, driverLocation.lat, driverLocation.lng)
           .catch((e: any) => console.error('位置上傳失敗', e));
      }, 5000);
 
@@ -323,6 +322,9 @@ export function DashboardPage() {
     try {
       const response = await orderApi.accept(orderId, driver.driverId);
       if (response.data.success) {
+        // 存儲司機當前位置到 sessionStorage，讓 TripPage 使用
+        sessionStorage.setItem('driverCurrentLocation', JSON.stringify(driverLocation));
+        sessionStorage.setItem('driverActiveOrderId', orderId);
         navigate(`/driver/trip/${orderId}`);
       }
     } catch (error: any) {
