@@ -17,13 +17,70 @@ import {
 import { LeafletMap } from '../../components/map/LeafletMap';
 import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
 import { reverseGeocodeWithCache } from '../../api/geocoding.api';
+import { useAuthStore } from '../../stores/auth.store';
+import { adminApi } from '../../api/admin.api';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   
+  // 預設位置（台中市），若後台有設定則會被覆蓋
+  const [currentUserLocation, setCurrentUserLocation] = useState<MapLocation>({ lat: 24.1618, lng: 120.6469 });
+
+
   const [pickupLocation, setPickupLocation] = useState<MapLocation | null>(null);
   const [dropoffLocation, setDropoffLocation] = useState<MapLocation | null>(null);
   
+  // 獲取使用者初始位置
+  useEffect(() => {
+    const fetchUserLocation = async () => {
+      if (!user?.id || user.role !== 'rider') return;
+      
+      // 1. 優先從 localStorage 讀取上次下車位置（行程結束時儲存的）
+      const savedLastLocation = localStorage.getItem('riderLastLocation');
+      if (savedLastLocation) {
+        try {
+          const loc = JSON.parse(savedLastLocation);
+          if (loc.lat && loc.lng) {
+            console.log('📍 HomePage: 使用上次下車位置作為起點', loc);
+            setCurrentUserLocation({ lat: Number(loc.lat), lng: Number(loc.lng) });
+            return; // 已有位置，不需要再從後台取
+          }
+        } catch (e) {
+          console.warn('解析 localStorage 位置失敗', e);
+        }
+      }
+      
+      // 2. 如果沒有 localStorage 位置，從後台取（首次使用或被清除）
+      try {
+        const response = await adminApi.getRider(user.id);
+        if (response.data.success && response.data.data) {
+          const riderData = response.data.data;
+          // 如果後台有設定位置 (x=lat, y=lng)
+          if (riderData.location && riderData.location.x && riderData.location.y) {
+            const newLat = Number(riderData.location.x);
+            const newLng = Number(riderData.location.y);
+            console.log('📍 HomePage: 使用後台設定初始位置', { 
+              raw: riderData.location, 
+              parsed: { lat: newLat, lng: newLng } 
+            });
+            
+            setCurrentUserLocation({ 
+              lat: newLat, 
+              lng: newLng 
+            });
+          }
+        }
+      } catch (error) {
+        console.error('無法獲取乘客位置:', error);
+      } finally {
+
+      }
+    };
+    
+    fetchUserLocation();
+  }, [user]);
+
   const [pickupAddress, setPickupAddress] = useState<string>('');
   const [dropoffAddress, setDropoffAddress] = useState<string>('');
   
@@ -41,11 +98,29 @@ export function HomePage() {
   }, [navigate]);
 
   // 開始搜尋 -> 初始化狀態
-  const handleStartSelection = () => {
+  const handleStartSelection = async () => {
     setSelectionMode('pickup');
     // 保留上車點(如果有的話)，重置下車點
     setDropoffLocation(null);
     setDropoffAddress('');
+    
+    // 立即初始化上車點為當前位置（解決無法直接確認的問題）
+    if (!pickupLocation) {
+      setPickupLocation(currentUserLocation);
+      // 同時獲取地址
+      setIsLoadingAddress(true);
+      try {
+        const address = await reverseGeocodeWithCache(currentUserLocation.lat, currentUserLocation.lng);
+        setPickupAddress(address);
+        sessionStorage.setItem('pickupLocation', JSON.stringify(currentUserLocation));
+        sessionStorage.setItem('pickupAddress', address);
+      } catch (error) {
+        const fallback = `(${currentUserLocation.lat.toFixed(4)}, ${currentUserLocation.lng.toFixed(4)})`;
+        setPickupAddress(fallback);
+      } finally {
+        setIsLoadingAddress(false);
+      }
+    }
   };
 
   const [isTyping, setIsTyping] = useState(false); // 是否正在手動輸入
@@ -163,16 +238,13 @@ export function HomePage() {
     }
   };
 
-  // 預設用戶位置（台中市） - 實務上應該用瀏覽器 Geolocation API 取得
-  const defaultUserLocation: MapLocation = { lat: 24.1618, lng: 120.6469 };
-
   const markers: MapMarker[] = [];
   
   // 「我的位置」始終顯示（藍色脈動圓點）
   // 這讓用戶知道自己在哪，即使在選擇上車/下車點時
   markers.push({ 
     id: 'user', 
-    position: defaultUserLocation, 
+    position: currentUserLocation, 
     type: 'user',
     label: '我的位置' 
   });
@@ -193,7 +265,7 @@ export function HomePage() {
       <LeafletMap
         center={
            // 當手動搜尋更新 location 時，這裡會傳入新的 center，地圖會飛過去
-           (selectionMode === 'pickup' ? pickupLocation : dropoffLocation) || defaultUserLocation
+           (selectionMode === 'pickup' ? pickupLocation : dropoffLocation) || currentUserLocation
         }
         zoom={16}
         markers={markers}
@@ -316,10 +388,10 @@ export function HomePage() {
             {selectionMode === 'pickup' && pickupLocation && (() => {
               // 計算距離 (Haversine)
               const R = 6371e3;
-              const lat1 = defaultUserLocation.lat * Math.PI / 180;
+              const lat1 = currentUserLocation.lat * Math.PI / 180;
               const lat2 = pickupLocation.lat * Math.PI / 180;
-              const dLat = (pickupLocation.lat - defaultUserLocation.lat) * Math.PI / 180;
-              const dLng = (pickupLocation.lng - defaultUserLocation.lng) * Math.PI / 180;
+              const dLat = (pickupLocation.lat - currentUserLocation.lat) * Math.PI / 180;
+              const dLng = (pickupLocation.lng - currentUserLocation.lng) * Math.PI / 180;
               const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                         Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2) * Math.sin(dLng/2);
               const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
@@ -353,8 +425,7 @@ export function HomePage() {
                 onClick={() => {
                    if (selectionMode === 'dropoff') {
                      setSelectionMode('pickup'); 
-                     // 切換回 pickup 時，可能需要恢復輸入框的值為 pickupAddress
-                     // React state 會自動處理
+                     // 相應邏輯...
                    } else {
                      setSelectionMode(null);
                    }

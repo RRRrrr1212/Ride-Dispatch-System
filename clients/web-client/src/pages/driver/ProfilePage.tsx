@@ -13,10 +13,17 @@ import { useNavigate } from 'react-router-dom';
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { driver, clearDriver } = useDriverStore();
+  const { driver, clearDriver, goOffline, isOnline } = useDriverStore();
   const { logout } = useAuthStore();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (isOnline) {
+      try {
+        await goOffline();
+      } catch (error) {
+        console.error('Logout offline failed', error);
+      }
+    }
     clearDriver();
     logout();
     navigate('/login', { replace: true });

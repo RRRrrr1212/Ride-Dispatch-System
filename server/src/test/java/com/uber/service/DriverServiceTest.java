@@ -28,12 +28,14 @@ class DriverServiceTest {
     private DriverService driverService;
     private DriverRepository driverRepository;
     private OrderRepository orderRepository;
+    private com.uber.repository.RiderRepository riderRepository;
     
     @BeforeEach
     void setUp() {
         driverRepository = new DriverRepository();
         orderRepository = new OrderRepository();
-        driverService = new DriverService(driverRepository, orderRepository);
+        riderRepository = new com.uber.repository.RiderRepository();
+        driverService = new DriverService(driverRepository, orderRepository, riderRepository);
     }
     
     // =========================================================================
@@ -213,8 +215,8 @@ class DriverServiceTest {
             // When
             List<Order> offers = driverService.getOffers("driver-1");
             
-            // Then - 只有 STANDARD 訂單
-            assertEquals(2, offers.size());
+            // Then - 只有 STANDARD 訂單，且限額 1 筆
+            assertEquals(1, offers.size());
             assertTrue(offers.stream().allMatch(o -> o.getVehicleType() == VehicleType.STANDARD));
         }
         
@@ -227,9 +229,9 @@ class DriverServiceTest {
             // When
             List<Order> offers = driverService.getOffers("driver-1");
             
-            // Then - order-2 距離較近 (12,22 vs 15,25)
+            // Then - order-2 距離較近 (12,22 vs 15,25)，只回傳最近的 1 筆
+            assertEquals(1, offers.size());
             assertEquals("order-2", offers.get(0).getOrderId());
-            assertEquals("order-1", offers.get(1).getOrderId());
         }
         
         @Test

@@ -28,6 +28,7 @@ class OrderServiceTest {
     private OrderService orderService;
     private OrderRepository orderRepository;
     private DriverRepository driverRepository;
+    private com.uber.repository.RiderRepository riderRepository;
     private AuditService auditService;
     private FareService fareService;
     
@@ -35,12 +36,13 @@ class OrderServiceTest {
     void setUp() {
         orderRepository = new OrderRepository();
         driverRepository = new DriverRepository();
+        riderRepository = new com.uber.repository.RiderRepository();
         AuditLogRepository auditLogRepository = new AuditLogRepository();
         auditService = new AuditService(auditLogRepository);
         fareService = new FareService();
         fareService.initRatePlans();
         
-        orderService = new OrderService(orderRepository, driverRepository, auditService, fareService);
+        orderService = new OrderService(orderRepository, driverRepository, riderRepository, auditService, fareService);
     }
     
     // =========================================================================

@@ -50,13 +50,48 @@ export const adminApi = {
   createRider: (data: { riderId: string; name: string; phone: string }) =>
     apiClient.post<ApiResponse<Rider>>('/admin/riders', data),
   
-  // 取得單一乘客
+  // 取得單一乘客 (回傳完整資訊，包含 name, phone, location 等)
   getRider: (riderId: string) =>
     apiClient.get<ApiResponse<Rider>>(`/admin/riders/${riderId}`),
   
   // 刪除乘客
   deleteRider: (riderId: string) =>
     apiClient.delete<ApiResponse<string>>(`/admin/riders/${riderId}`),
+
+  // ========== 位置設置 (Demo 用途) ==========
+  
+  // 設置司機位置
+  setDriverLocation: (driverId: string, data: { lat: number; lng: number; address?: string }) =>
+    apiClient.put<ApiResponse<{ success: boolean; driverId: string; location: Location }>>(`/admin/drivers/${driverId}/location`, data),
+  
+  // 取得司機位置設置狀態
+  getDriverLocationStatus: (driverId: string) =>
+    apiClient.get<ApiResponse<{ driverId: string; canSetLocation: boolean; currentLocation: Location | null; reason?: string }>>(`/admin/drivers/${driverId}/location-status`),
+  
+  // 設置乘客位置
+  setRiderLocation: (riderId: string, data: { lat: number; lng: number; address?: string }) =>
+    apiClient.put<ApiResponse<{ success: boolean; riderId: string; location: Location }>>(`/admin/riders/${riderId}/location`, data),
+  
+  // 取得乘客位置設置狀態
+  getRiderLocationStatus: (riderId: string) =>
+    apiClient.get<ApiResponse<{ 
+      riderId: string; 
+      canSetLocation: boolean; 
+      currentLocation: Location | null; 
+      reason?: string;
+      totalOrdersFound?: number;
+      activeOrdersCount?: number;
+      activeOrders?: Array<{ orderId: string; status: string; createdAt: string; driverId?: string }>;
+    }>>(`/admin/riders/${riderId}/location-status`),
+  
+  // 強制取消乘客的殘留訂單
+  forceCancelRiderOrders: (riderId: string) =>
+    apiClient.post<ApiResponse<{ 
+      riderId: string; 
+      cancelledCount: number; 
+      cancelledOrderIds: string[]; 
+      timestamp: string;
+    }>>(`/admin/riders/${riderId}/force-cancel-orders`),
 
   // ========== 資料管理 ==========
   

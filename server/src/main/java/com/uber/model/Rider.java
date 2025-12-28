@@ -18,5 +18,6 @@ public class Rider {
     private String riderId;    // 手機號碼作為 ID
     private String name;
     private String phone;
+    private Location location; // 初始位置 (用於 Demo 設置)
     private Instant createdAt;
 }

@@ -24,6 +24,7 @@ public class OrderService {
     
     private final OrderRepository orderRepository;
     private final DriverRepository driverRepository;
+    private final com.uber.repository.RiderRepository riderRepository;
     private final AuditService auditService;
     private final FareService fareService;
     
@@ -35,9 +36,30 @@ public class OrderService {
      */
     public Order createOrder(String passengerId, Location pickup, 
                             Location dropoff, VehicleType vehicleType) {
-        // 驗證上下車點不可相同
-        if (pickup.getX() == dropoff.getX() && pickup.getY() == dropoff.getY()) {
-            throw new BusinessException("INVALID_REQUEST", "上車地點與下車地點不可相同");
+        log.info("createOrder called with passengerId: '{}', pickup: {}, dropoff: {}", passengerId, pickup, dropoff);
+
+        if (passengerId == null || passengerId.trim().isEmpty()) {
+            log.error("Create order failed: passengerId is empty!");
+            throw new BusinessException("INVALID_REQUEST", "乘客 ID 不可為空");
+        }
+        
+        // 確保 Rider 存在於 Repository 中（用於 enrichOrder）
+        // 如果不存在，從 passengerId 解析並自動建立
+        if (!riderRepository.existsById(passengerId)) {
+            // passengerId 格式: "rider-{phone}" 
+            String phone = passengerId.startsWith("rider-") 
+                ? passengerId.substring(6) 
+                : passengerId;
+            String defaultName = "乘客 " + phone.substring(Math.max(0, phone.length() - 4)); // 顯示末四碼
+            
+            com.uber.model.Rider rider = com.uber.model.Rider.builder()
+                .riderId(passengerId)
+                .name(defaultName)
+                .phone(phone)
+                .createdAt(java.time.Instant.now())
+                .build();
+            riderRepository.save(rider);
+            log.info("Auto-created rider {} with name '{}'", passengerId, defaultName);
         }
         
         double distance = pickup.distanceTo(dropoff);
@@ -58,10 +80,10 @@ public class OrderService {
         orderRepository.save(order);
         
         auditService.logSuccess(order.getOrderId(), "CREATE", "PASSENGER", 
-                passengerId, null, "PENDING");
+                passengerId, "NONE", "PENDING");
         
         log.info("Order created: {}", order.getOrderId());
-        return order;
+        return enrichOrder(order);
     }
     
     /**
@@ -114,6 +136,13 @@ public class OrderService {
                         driverId, "PENDING", "DRIVER_BUSY");
                 throw new BusinessException("DRIVER_BUSY", "司機正在忙碌");
             }
+
+            // 檢查車種匹配 (修復: 菁英司機誤接尊榮訂單)
+            if (driver.getVehicleType() != order.getVehicleType()) {
+                 auditService.logFailure(orderId, "ACCEPT", "DRIVER", 
+                        driverId, "PENDING", "VEHICLE_TYPE_MISMATCH");
+                 throw new BusinessException("VEHICLE_TYPE_MISMATCH", "您的車種不符合此訂單需求");
+            }
             
             // 執行接單
             order.setStatus(OrderStatus.ACCEPTED);
@@ -129,8 +158,9 @@ public class OrderService {
             auditService.logSuccess(orderId, "ACCEPT", "DRIVER", 
                     driverId, "PENDING", "ACCEPTED");
             
+            
             log.info("Order {} accepted by driver {}", orderId, driverId);
-            return order;
+            return enrichOrder(order);
             
         } finally {
             acceptLock.unlock();
@@ -165,7 +195,7 @@ public class OrderService {
                 driverId, "ACCEPTED", "ONGOING");
         
         log.info("Trip started for order {}", orderId);
-        return order;
+        return enrichOrder(order);
     }
     
     /**
@@ -216,11 +246,21 @@ public class OrderService {
             driverRepository.save(driver);
         });
         
+        // 修正: 行程結束後，強制更新乘客位置為下車地點
+        // (解決乘客端未回傳座標導致後台位置滯留的問題)
+        if (order.getPassengerId() != null) {
+            riderRepository.findById(order.getPassengerId()).ifPresent(rider -> {
+                rider.setLocation(order.getDropoffLocation());
+                riderRepository.save(rider);
+                log.info("Rider {} location updated to dropoff point upon trip completion", rider.getRiderId());
+            });
+        }
+        
         auditService.logSuccess(orderId, "COMPLETE", "DRIVER", 
                 driverId, "ONGOING", "COMPLETED");
         
         log.info("Trip completed for order {}, fare: {}, driver earnings: {}", orderId, fare, driverEarnings);
-        return order;
+        return enrichOrder(order);
     }
     
     /**
@@ -267,29 +307,57 @@ public class OrderService {
                 cancelledBy, previousState, "CANCELLED");
         
         log.info("Order {} cancelled", orderId);
-        return order;
+        return enrichOrder(order);
     }
     
     /**
      * 查詢訂單
      */
     public Order getOrder(String orderId) {
-        return orderRepository.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException("ORDER_NOT_FOUND", "訂單不存在"));
+        return enrichOrder(order);
+    }
+
+    /**
+     * 填充額外資訊 (乘客/司機資料)
+     */
+    public Order enrichOrder(Order order) {
+        if (order == null) return null;
+        
+        // 填充乘客姓名
+        if (order.getPassengerId() != null) {
+            riderRepository.findById(order.getPassengerId())
+                .ifPresent(rider -> order.setRiderName(rider.getName()));
+        }
+        
+        // 填充司機資訊
+        if (order.getDriverId() != null) {
+            driverRepository.findById(order.getDriverId()).ifPresent(driver -> {
+                order.setDriverName(driver.getName());
+                order.setVehiclePlate(driver.getVehiclePlate());
+            });
+        }
+        
+        return order;
     }
     
     /**
      * 取得所有待派單訂單
      */
     public java.util.List<Order> getPendingOrders() {
-        return orderRepository.findByStatus(OrderStatus.PENDING);
+        return orderRepository.findByStatus(OrderStatus.PENDING).stream()
+                .map(this::enrichOrder)
+                .collect(java.util.stream.Collectors.toList());
     }
     
     /**
      * 取得所有訂單
      */
     public java.util.List<Order> getAllOrders() {
-        return orderRepository.findAll();
+        return orderRepository.findAll().stream()
+                .map(this::enrichOrder)
+                .collect(java.util.stream.Collectors.toList());
     }
     
     /**

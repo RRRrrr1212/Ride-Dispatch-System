@@ -23,6 +23,7 @@ public class DriverService {
     
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
+    private final com.uber.repository.RiderRepository riderRepository;
     
     /**
      * 司機上線
@@ -108,12 +109,23 @@ public class DriverService {
         Location driverLocation = driver.getLocation();
         VehicleType driverVehicleType = driver.getVehicleType();
         
+        // 只返回最近的一筆訂單，避免司機一次看到多張單造成混淆
         return orderRepository.findByStatus(OrderStatus.PENDING).stream()
                 .filter(order -> order.getVehicleType() == driverVehicleType)
                 .sorted(Comparator
                         .comparingDouble((Order o) -> driverLocation.distanceTo(o.getPickupLocation()))
                         .thenComparing(Order::getOrderId))
+                .limit(1) // 一次只派一張單
+                .map(this::enrichOrder)
                 .collect(Collectors.toList());
+    }
+
+    private Order enrichOrder(Order order) {
+        if (order != null && order.getPassengerId() != null) {
+            riderRepository.findById(order.getPassengerId())
+                .ifPresent(rider -> order.setRiderName(rider.getName()));
+        }
+        return order;
     }
     
     /**
