@@ -35,3 +35,8 @@ hs_err_pid*
 
 # Clients
 #clients/build*.txt
+
+# Environments
+.env
+.env.*
+!.env.example
