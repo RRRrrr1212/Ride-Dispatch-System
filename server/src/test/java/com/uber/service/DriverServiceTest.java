@@ -288,5 +288,32 @@ class DriverServiceTest {
             assertEquals(DriverStatus.OFFLINE, result.getStatus());
             assertFalse(result.isBusy());
         }
+
+        @Nested
+        @DisplayName("registerDriver 重複註冊/覆寫行為")
+        class RegisterDriverDuplicateTests {
+
+            @Test
+            @DisplayName("重複註冊相同 driverId 時會更新已存資料（覆寫）")
+            void testRegisterDriver_DuplicateUpdatesExisting() {
+                // 初次註冊
+                Driver first = driverService.registerDriver("driver-dup", "Alice", "0911111111", "AAA-1111", VehicleType.STANDARD);
+                assertNotNull(first);
+                assertEquals("Alice", first.getName());
+
+                // 再次註冊相同 driverId，但名稱與電話變更
+                Driver second = driverService.registerDriver("driver-dup", "Bob", "0922222222", "BBB-2222", VehicleType.PREMIUM);
+                assertNotNull(second);
+                assertEquals("driver-dup", second.getDriverId());
+
+                // 從 repository 取出，確認資料已更新（覆蓋）
+                Driver stored = driverRepository.findById("driver-dup").orElse(null);
+                assertNotNull(stored);
+                assertEquals("Bob", stored.getName());
+                assertEquals("0922222222", stored.getPhone());
+                assertEquals("BBB-2222", stored.getVehiclePlate());
+                assertEquals(VehicleType.PREMIUM, stored.getVehicleType());
+            }
+        }
     }
 }
