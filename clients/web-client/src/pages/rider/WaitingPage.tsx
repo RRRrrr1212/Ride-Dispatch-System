@@ -144,12 +144,17 @@ export function WaitingPage() {
 
   // 根據司機位置和上車點顯示距離估算
   // 這裡簡單計算直線距離
+  // 根據司機位置和上車點顯示距離估算
   const getSimulatedArrivalMinutes = () => {
     if (driverPosition && pickupLocation) {
       const dx = driverPosition.lat - pickupLocation.lat;
       const dy = driverPosition.lng - pickupLocation.lng;
-      const dist = Math.sqrt(dx*dx + dy*dy) * 111; // km
-      return Math.ceil(dist / 0.5 * 60); // 假設時速 30km/h => 0.5km/min
+      const distKm = Math.sqrt(dx*dx + dy*dy) * 111; // km
+      
+      // 如果距離異常大 (> 50km)，可能還沒同步位置，顯示預設值或 "..."
+      if (distKm > 50) return -1; // 表示異常
+
+      return Math.ceil(distKm / 0.5 * 60); // 假設時速 30km/h => 0.5km/min
     }
     return 3;
   }
@@ -173,9 +178,20 @@ export function WaitingPage() {
   // 當司機已接單，規劃 司機 -> 上車點 的路徑
   useEffect(() => {
     if (order?.status === 'ACCEPTED' && driverPosition && pickupLocation) {
+      // 避免位置過遠時請求路徑 (減少 API 壓力)
+      const dx = driverPosition.lat - pickupLocation.lat;
+      const dy = driverPosition.lng - pickupLocation.lng;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) { // 粗略檢查
+          setRoutePath(null);
+          return;
+      }
+
       getRouteWithCache(driverPosition, pickupLocation)
         .then(route => setRoutePath(route.coordinates))
-        .catch(console.error);
+        .catch(err => {
+            console.warn('路徑規劃失敗:', err);
+            setRoutePath(null);
+        });
     } else {
       setRoutePath(null);
     }
@@ -301,7 +317,14 @@ export function WaitingPage() {
                 <Box>
                   <Typography variant="caption" color="grey.500">司機將在</Typography>
                   <Typography variant="h3" fontWeight="bold" color="white">
-                     {getSimulatedArrivalMinutes()} <span style={{ fontSize: '1rem' }}>分鐘後到達</span>
+                     {(() => {
+                        const mins = getSimulatedArrivalMinutes();
+                        return mins === -1 ? (
+                            <span style={{ fontSize: '1.5rem' }}>位置同步中...</span>
+                        ) : (
+                            <>{mins} <span style={{ fontSize: '1rem' }}>分鐘後到達</span></>
+                        );
+                     })()}
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'right' }}>

@@ -24,6 +24,7 @@ import type { MapLocation, MapMarker } from '../../components/map/LeafletMap';
 import { useDriverStore } from '../../stores/driver.store';
 import { adminApi } from '../../api/admin.api';
 import { orderApi } from '../../api/order.api';
+import { driverApi } from '../../api/driver.api';
 import { reverseGeocodeWithCache } from '../../api/geocoding.api';
 import type { Order } from '../../types';
 
@@ -146,7 +147,7 @@ function OrderCard({ order, onAccept, onDecline, accepting }: {
           </Box>
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="h5" color="success.main" fontWeight="bold">
-              ${order.estimatedFare || order.fare || 70}
+              ${Math.round(order.estimatedFare || order.fare || 70)}
             </Typography>
             <Chip 
               label="等待中" 
@@ -230,22 +231,59 @@ export function DashboardPage() {
     lng: 120.6469,
   });
 
-  // 獲取當前位置
+  // 獲取並持續追蹤當前位置
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setDriverLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('無法獲取位置:', error);
+    if (!navigator.geolocation) return;
+
+    // 立即獲取一次
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setDriverLocation({ lat: latitude, lng: longitude });
+        // 如果已上線，立即同步到後端 (雖然下面 watch 也會觸發，但為了保險)
+        if (isOnline && driver) {
+             driverApi.updateLocation(driver.driverId, longitude, latitude).catch(console.error);
         }
-      );
-    }
-  }, []);
+      },
+      console.error
+    );
+
+    // 持續追蹤
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setDriverLocation({ lat: latitude, lng: longitude });
+        
+        // 如果司機在線上，上傳位置到後端
+        if (isOnline && driver) {
+           // 注意：頻率可能很高，實務上應該 throttle，但 demo 版先這樣確保即時性
+           // 為了避免過度請求，可以使用簡單的 throttle 或依賴 watchPosition 的觸發頻率（瀏覽器通常會控制）
+           // 這裡我們加一個簡單的檢查，距離上次更新超過 5 秒再上傳，或者直接上傳如果流量允許
+           // 考慮 demo 效果，我們每 3 秒上傳一次的邏輯放在另一個 effect 比較好，
+           // 這裡先單純更新本地 state。
+        }
+      },
+      console.error,
+      { enableHighAccuracy: true, maximumAge: 0 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [isOnline, driver]);
+
+  // 定期上傳位置到後端 (每 5 秒)
+  useEffect(() => {
+     if (!isOnline || !driver) return;
+
+     const interval = setInterval(() => {
+        // 使用當前的 driverLocation 上傳
+        // 由於 lat/lng 是 number，直接傳
+        // 注意 driverApi.updateLocation 參數順序是 (id, x/lng, y/lat)
+        driverApi.updateLocation(driver.driverId, driverLocation.lng, driverLocation.lat)
+          .catch((e: any) => console.error('位置上傳失敗', e));
+     }, 5000);
+
+     return () => clearInterval(interval);
+  }, [isOnline, driver, driverLocation]);
 
   // 檢查是否有進行中的訂單 (防止刷新或誤觸首頁導致狀態丟失)
   useEffect(() => {
@@ -346,7 +384,7 @@ export function DashboardPage() {
           id: `${order.orderId}-pickup`,
           position: pickupCoords,
           type: 'pickup',
-          label: `$${order.estimatedFare || 70}`,
+          label: `$${Math.round(order.estimatedFare || 70)}`,
         });
         points.push(pickupCoords);
       }

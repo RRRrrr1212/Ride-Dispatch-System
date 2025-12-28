@@ -58,13 +58,12 @@ public class FareService {
     }
     
     /**
-     * 計算實際車資 (距離 + 時間)
+     * 計算實際車資 (距離計價，簡單合理)
      */
     public double calculateFare(VehicleType vehicleType, double distance, int durationMinutes) {
         RatePlan plan = ratePlans.get(vehicleType);
-        double fare = plan.getBaseFare() 
-                + (distance * plan.getPerKmRate()) 
-                + (durationMinutes * plan.getPerMinRate());
+        // 簡單計費：基本費 + 距離費（不加時間費，更合理）
+        double fare = plan.getBaseFare() + (distance * plan.getPerKmRate());
         return Math.round(Math.max(fare, plan.getMinFare()) * 100.0) / 100.0;
     }
     

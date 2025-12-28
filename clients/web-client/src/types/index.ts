@@ -29,6 +29,8 @@ export interface Order {
   vehicleType: VehicleType;
   estimatedFare?: number;
   fare?: number;
+  actualFare?: number;       // 實際車資
+  driverEarnings?: number;   // 司機實際收入（扣除平台抽成）
   distance?: number;
   duration?: number;
   createdAt: string;

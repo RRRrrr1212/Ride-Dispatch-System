@@ -74,16 +74,23 @@ export function RideRequestPage() {
     }
   }, [pickupLocation, dropoffLocation]);
 
-  // 計算特定車種的預估車資
+  // 計算特定車種的預估車資（簡單合理的計費方式）
   const calculateFareForType = (type: VehicleType) => {
     if (!routeDistance && (!pickupLocation || !dropoffLocation)) return 0;
     
-    // 如果沒有路徑距離，用直線距離估算
-    const dist = routeDistance > 0 ? routeDistance / 1000 : 3; 
+    // 距離（公里）
+    const dist = routeDistance > 0 ? routeDistance / 1000 : 3;
     
-    const baseFare = type === 'STANDARD' ? 50 : type === 'PREMIUM' ? 80 : 100;
-    const perKmRate = type === 'STANDARD' ? 15 : type === 'PREMIUM' ? 25 : 30;
-    return Math.round(baseFare + dist * perKmRate);
+    // 費率
+    const rates = {
+      STANDARD: { baseFare: 50, perKmRate: 15, minFare: 70 },
+      PREMIUM: { baseFare: 80, perKmRate: 25, minFare: 120 },
+      XL: { baseFare: 100, perKmRate: 30, minFare: 150 },
+    };
+    
+    const rate = rates[type];
+    const fare = rate.baseFare + (dist * rate.perKmRate);
+    return Math.round(Math.max(fare, rate.minFare));
   };
 
   const handleRequestRide = async () => {

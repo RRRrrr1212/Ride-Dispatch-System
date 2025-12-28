@@ -24,6 +24,15 @@ export async function getRoute(
   const url = `${OSRM_BASE_URL}/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
 
   const response = await fetch(url);
+  
+  if (!response.ok) {
+    if (response.status === 429) {
+      console.warn('API 請求過多，暫停路徑規劃');
+      throw new Error('Too Many Requests');
+    }
+    throw new Error(`Routing API Error: ${response.status}`);
+  }
+
   const data = await response.json();
 
   if (data.code !== 'Ok' || !data.routes?.[0]) {

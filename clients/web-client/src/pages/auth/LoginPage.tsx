@@ -18,6 +18,7 @@ import {
 import { useAuthStore } from '../../stores/auth.store';
 import { useDriverStore } from '../../stores/driver.store';
 import { driverApi } from '../../api/driver.api';
+import { adminApi } from '../../api/admin.api';
 import type { UserRole } from '../../types';
 
 export function LoginPage() {
@@ -27,36 +28,15 @@ export function LoginPage() {
 
   const [role, setRole] = useState<UserRole>('rider');
   const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  function getDefaultPath(r: UserRole) {
-    switch (r) {
-      case 'driver':
-        return '/driver/dashboard';
-      case 'admin':
-        return '/admin/dashboard';
-      default:
-        return '/rider/home';
-    }
-  }
 
-  // 乘客/管理員登入
-  const handleSimpleLogin = () => {
-    if (!phone) return;
-
-    const userId = `${role}-${phone}`;
-    const userName = name || (role === 'rider' ? '乘客' : '管理員');
-
-    login(userId, userName, role, phone);
-    navigate(getDefaultPath(role), { replace: true });
-  };
-
-  // 司機登入
-  const handleDriverLogin = async () => {
-    if (!phone) {
-      setError('請輸入手機號碼');
+  // 乘客登入 (需驗證後台是否有建立帳號)
+  const handleRiderLogin = async () => {
+    if (!phone || !password) {
+      setError('請輸入帳號和密碼');
       return;
     }
 
@@ -64,38 +44,80 @@ export function LoginPage() {
     setError('');
 
     try {
-      // 嘗試從後端取得司機資訊
+      const riderId = `rider-${phone}`;
+      
+      // 驗證乘客帳號是否存在
+      const response = await adminApi.getRider(riderId);
+      
+      if (response.data.success && response.data.data) {
+        const rider = response.data.data;
+        // 帳號存在，登入成功
+        login(riderId, rider.name, 'rider', phone);
+        navigate('/rider/home', { replace: true });
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setError('帳號不存在，請聯絡管理員建立');
+      } else {
+        setError('登入失敗，請重試');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 管理員登入 (硬編碼驗證)
+  const handleAdminLogin = () => {
+    if (!phone || !password) {
+      setError('請輸入帳號和密碼');
+      return;
+    }
+
+    // 硬編碼驗證，方便演示
+    if (phone !== 'admin' || password !== 'admin123') {
+      setError('帳號或密碼錯誤');
+      return;
+    }
+
+    const userId = `admin-${phone}`;
+    const userName = '管理員';
+
+    login(userId, userName, 'admin', phone);
+    navigate('/admin/dashboard', { replace: true });
+  };
+
+  // 司機登入 (需驗證後台是否有建立帳號)
+  const handleDriverLogin = async () => {
+    if (!phone || !password) {
+      setError('請輸入帳號和密碼');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
       const driverId = `driver-${phone}`;
       
-      // 先嘗試登入 (假設後端有這個司機)
-      // 如果失敗，使用 Demo 模式
-      try {
-        // 嘗試取得司機資訊
-        await driverApi.getDriver(driverId);
-        // 如果成功，表示司機存在
-      } catch (err) {
-        // 司機不存在或 API 失敗，使用 Demo 模式
-        console.log('使用 Demo 模式登入');
-      }
-
-      // 設定 auth store
-      login(driverId, name || '司機', 'driver', phone);
+      // 驗證司機帳號是否存在
+      const response = await driverApi.getDriver(driverId);
       
-      // 設定 driver store (Demo 模式)
-      setDriver({
-        driverId,
-        name: name || '司機',
-        phone,
-        vehiclePlate: `ABC-${Math.floor(Math.random() * 9000) + 1000}`,
-        vehicleType: 'STANDARD',
-        status: 'OFFLINE',
-        busy: false,
-      });
-
-
-      navigate('/driver/dashboard', { replace: true });
-    } catch (err) {
-      setError('登入失敗，請重試');
+      if (response.data.success && response.data.data) {
+        const driver = response.data.data;
+        
+        // 帳號存在，設定 auth 和 driver store
+        login(driverId, driver.name, 'driver', driver.phone);
+        setDriver(driver);
+        navigate('/driver/dashboard', { replace: true });
+      } else {
+        setError('帳號不存在，請聯絡管理員建立');
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setError('帳號不存在，請聯絡管理員建立');
+      } else {
+        setError('登入失敗，請重試');
+      }
     } finally {
       setLoading(false);
     }
@@ -133,6 +155,8 @@ export function LoginPage() {
               if (newRole) {
                 setRole(newRole);
                 setError('');
+                setPhone('');
+                setPassword('');
               }
             }}
             fullWidth
@@ -149,13 +173,19 @@ export function LoginPage() {
             </ToggleButton>
           </ToggleButtonGroup>
 
-          {/* 乘客/管理員 - 簡單登入 */}
-          {(role === 'rider' || role === 'admin') && (
+          {error && (
+            <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
+
+          {/* 乘客登入 */}
+          {role === 'rider' && (
             <>
               <TextField
                 fullWidth
-                label="手機號碼"
-                placeholder="0912-345-678"
+                label="帳號"
+                placeholder="輸入手機號碼"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 sx={{ mb: 2 }}
@@ -163,38 +193,65 @@ export function LoginPage() {
               />
               <TextField
                 fullWidth
-                label="姓名 (選填)"
-                placeholder="輸入您的姓名"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                label="密碼"
+                placeholder="輸入密碼"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 sx={{ mb: 3 }}
+                type="password"
               />
               <Button
                 fullWidth
                 variant="contained"
                 size="large"
-                onClick={handleSimpleLogin}
-                disabled={!phone}
+                onClick={handleRiderLogin}
+                disabled={!phone || !password || loading}
                 data-testid="btn-login"
+              >
+                {loading ? '登入中...' : '登入'}
+              </Button>
+            </>
+          )}
+
+          {/* 管理員登入 */}
+          {role === 'admin' && (
+            <>
+              <TextField
+                fullWidth
+                label="帳號"
+                placeholder="輸入管理員帳號"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="密碼"
+                placeholder="輸入管理員密碼"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                sx={{ mb: 3 }}
+                type="password"
+              />
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleAdminLogin}
+                disabled={!phone || !password}
               >
                 登入
               </Button>
             </>
           )}
 
-          {/* 司機 - 僅登入 (帳號由後台建立) */}
+          {/* 司機登入 */}
           {role === 'driver' && (
             <>
-              {error && (
-                <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-                  {error}
-                </Typography>
-              )}
-
               <TextField
                 fullWidth
-                label="手機號碼"
-                placeholder="0912-345-678"
+                label="帳號"
+                placeholder="輸入手機號碼"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 sx={{ mb: 2 }}
@@ -202,30 +259,27 @@ export function LoginPage() {
               />
               <TextField
                 fullWidth
-                label="姓名 (選填)"
-                placeholder="輸入您的姓名"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                label="密碼"
+                placeholder="輸入密碼"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 sx={{ mb: 3 }}
+                type="password"
               />
               <Button
                 fullWidth
                 variant="contained"
                 size="large"
                 onClick={handleDriverLogin}
-                disabled={!phone || loading}
+                disabled={!phone || !password || loading}
                 data-testid="btn-driver-login"
               >
-                {loading ? '登入中...' : '司機登入'}
+                {loading ? '登入中...' : '登入'}
               </Button>
             </>
           )}
         </CardContent>
       </Card>
-
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 4 }}>
-        Demo 版本 - 支援模擬模式
-      </Typography>
     </Box>
   );
 }

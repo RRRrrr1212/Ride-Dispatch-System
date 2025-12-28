@@ -112,7 +112,12 @@ export function CompletedPage() {
           <Box sx={{ textAlign: 'left' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography color="text.secondary">車種</Typography>
-              <Typography>{order?.vehicleType}</Typography>
+              <Typography>{
+                order?.vehicleType === 'STANDARD' ? '標準' :
+                order?.vehicleType === 'PREMIUM' ? '尊榮' :
+                order?.vehicleType === 'XL' ? '大型車' :
+                order?.vehicleType || '標準'
+              }</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography color="text.secondary">距離</Typography>

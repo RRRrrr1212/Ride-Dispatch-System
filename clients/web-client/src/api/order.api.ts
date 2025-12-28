@@ -25,4 +25,8 @@ export const orderApi = {
   // 完成行程
   complete: (orderId: string, driverId: string) =>
     apiClient.put<ApiResponse<Order>>(`/orders/${orderId}/complete`, { driverId }),
+
+  // 更新路徑 (共享路徑給乘客端)
+  updateRoute: (orderId: string, routePathJson: string) =>
+    apiClient.put<ApiResponse<{ orderId: string; routePathJson: string }>>(`/orders/${orderId}/route`, { routePathJson }),
 };

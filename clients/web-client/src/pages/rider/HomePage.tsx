@@ -163,9 +163,29 @@ export function HomePage() {
     }
   };
 
+  // 預設用戶位置（台中市） - 實務上應該用瀏覽器 Geolocation API 取得
+  const defaultUserLocation: MapLocation = { lat: 24.1618, lng: 120.6469 };
+
   const markers: MapMarker[] = [];
-  if (pickupLocation) markers.push({ id: 'pickup', position: pickupLocation, type: 'pickup', label: '上車點' });
-  if (dropoffLocation && selectionMode !== 'dropoff') markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車點' });
+  
+  // 「我的位置」始終顯示（藍色脈動圓點）
+  // 這讓用戶知道自己在哪，即使在選擇上車/下車點時
+  markers.push({ 
+    id: 'user', 
+    position: defaultUserLocation, 
+    type: 'user',
+    label: '我的位置' 
+  });
+  
+  // 已確認的上車點（綠色 P 標記）
+  if (pickupLocation && selectionMode !== 'pickup') {
+    markers.push({ id: 'pickup', position: pickupLocation, type: 'pickup', label: '上車點' });
+  }
+  
+  // 已確認的下車點（紅色 D 標記）
+  if (dropoffLocation && selectionMode !== 'dropoff') {
+    markers.push({ id: 'dropoff', position: dropoffLocation, type: 'dropoff', label: '下車點' });
+  }
 
   return (
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -173,12 +193,12 @@ export function HomePage() {
       <LeafletMap
         center={
            // 當手動搜尋更新 location 時，這裡會傳入新的 center，地圖會飛過去
-           (selectionMode === 'pickup' ? pickupLocation : dropoffLocation) || { lat: 24.1618, lng: 120.6469 }
+           (selectionMode === 'pickup' ? pickupLocation : dropoffLocation) || defaultUserLocation
         }
         zoom={16}
-        markers={selectionMode === 'pickup' ? [] : (selectionMode === 'dropoff' ? markers.filter(m => m.type === 'pickup') : markers)}
+        markers={markers}
         selectionMode={selectionMode}
-        showCenterPin={selectionMode !== null && !isTyping} // 輸入時隱藏大頭針？或者保持顯示但不動
+        showCenterPin={selectionMode !== null && !isTyping}
         onCenterChange={handleCenterChange}
       />
 
@@ -291,6 +311,40 @@ export function HomePage() {
                    );
                })()}
             </Paper>
+
+            {/* 距離提示：當選擇的上車點距離目前位置較遠時顯示 */}
+            {selectionMode === 'pickup' && pickupLocation && (() => {
+              // 計算距離 (Haversine)
+              const R = 6371e3;
+              const lat1 = defaultUserLocation.lat * Math.PI / 180;
+              const lat2 = pickupLocation.lat * Math.PI / 180;
+              const dLat = (pickupLocation.lat - defaultUserLocation.lat) * Math.PI / 180;
+              const dLng = (pickupLocation.lng - defaultUserLocation.lng) * Math.PI / 180;
+              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2) * Math.sin(dLng/2);
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+              const distance = Math.round(R * c);
+              
+              // 只在距離 > 100m 時顯示
+              if (distance > 100) {
+                return (
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#fbbf24', 
+                      mb: 1.5, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 0.5,
+                      px: 0.5 
+                    }}
+                  >
+                    📍 距離目前位置約 {distance >= 1000 ? `${(distance/1000).toFixed(1)} 公里` : `${distance} 公尺`}
+                  </Typography>
+                );
+              }
+              return null;
+            })()}
 
             {/* 操作按鈕 */}
             <Box sx={{ display: 'flex', gap: 1.5 }}>

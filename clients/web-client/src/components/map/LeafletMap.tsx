@@ -14,7 +14,7 @@ export interface MapLocation {
 export interface MapMarker {
   id: string;
   position: MapLocation;
-  type: 'pickup' | 'dropoff' | 'driver' | 'passenger' | 'car';
+  type: 'pickup' | 'dropoff' | 'driver' | 'passenger' | 'car' | 'user';
   label?: string;
   color?: string;
 }
@@ -77,6 +77,48 @@ const driverIcon = createIcon('#fbbf24', '🚗');
 const passengerIcon = createIcon('#3b82f6', '👤');
 const carIcon = createIcon('#f59e0b', '🚗');
 
+// 用戶位置專屬圖標 - 藍色脈動效果
+const userIcon = L.divIcon({
+  className: 'user-location-icon',
+  html: `
+    <div style="
+      width: 40px;
+      height: 40px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background: rgba(59, 130, 246, 0.25);
+        border-radius: 50%;
+        animation: userPulse 2s infinite;
+      "></div>
+      <div style="
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+        z-index: 1;
+      "></div>
+    </div>
+    <style>
+      @keyframes userPulse {
+        0% { transform: scale(0.8); opacity: 1; }
+        50% { transform: scale(1.3); opacity: 0.4; }
+        100% { transform: scale(0.8); opacity: 1; }
+      }
+    </style>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+});
+
 // 取得標記對應的圖標
 const getMarkerIcon = (type: MapMarker['type']) => {
   switch (type) {
@@ -85,6 +127,7 @@ const getMarkerIcon = (type: MapMarker['type']) => {
     case 'driver': return driverIcon;
     case 'passenger': return passengerIcon;
     case 'car': return carIcon;
+    case 'user': return userIcon;
     default: return pickupIcon;
   }
 };
