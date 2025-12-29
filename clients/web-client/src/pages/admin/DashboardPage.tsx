@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Card, CardContent, Paper, useTheme } from '@mui/material';
+import { Box, Typography, Card, CardContent, Paper, useTheme, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import {
   LineChart,
   Line,
@@ -47,6 +48,11 @@ export function DashboardPage() {
   });
 
   const [chartData, setChartData] = useState<any[]>([]);
+  
+  // 重置功能相關狀態
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const fetchStats = async () => {
     try {
@@ -124,6 +130,34 @@ export function DashboardPage() {
     }
   };
 
+  // 重置行程資料
+  const handleResetTripData = async () => {
+    setResetting(true);
+    try {
+      const response = await adminApi.resetTripData();
+      if (response.data.success && response.data.data) {
+        const data = response.data.data;
+        setSnackbar({
+          open: true,
+          message: `已清除 ${data.ordersCleared} 筆訂單和 ${data.auditLogsCleared} 筆日誌，保留 ${data.driversPreserved} 位司機和 ${data.ridersPreserved} 位乘客`,
+          severity: 'success'
+        });
+        // 重新獲取統計數據
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('重置失敗:', error);
+      setSnackbar({
+        open: true,
+        message: '重置失敗，請稍後再試',
+        severity: 'error'
+      });
+    } finally {
+      setResetting(false);
+      setResetDialogOpen(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     // 設定輪詢更新數據
@@ -133,9 +167,71 @@ export function DashboardPage() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-        儀表板
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          儀表板
+        </Typography>
+        <Button
+          variant="outlined"
+          color="warning"
+          startIcon={<RefreshIcon />}
+          onClick={() => setResetDialogOpen(true)}
+          sx={{ borderRadius: 2 }}
+        >
+          重置行程資料
+        </Button>
+      </Box>
+
+      {/* 重置確認對話框 */}
+      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+        <DialogTitle>確認重置行程資料</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            此操作將會：
+            <br /><br />
+            <strong>清除：</strong>
+            <br />• 所有訂單記錄
+            <br />• 所有審計日誌
+            <br /><br />
+            <strong>保留：</strong>
+            <br />• 司機基礎資料（ID、姓名、車牌、位置）
+            <br />• 乘客基礎資料（ID、姓名、電話、位置）
+            <br />• 費率設定
+            <br /><br />
+            所有司機將被設為離線狀態。確定要繼續嗎？
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)} disabled={resetting}>
+            取消
+          </Button>
+          <Button 
+            onClick={handleResetTripData} 
+            color="warning" 
+            variant="contained"
+            disabled={resetting}
+            startIcon={resetting ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {resetting ? '重置中...' : '確認重置'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 成功/失敗提示 */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* 數據卡片區 */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3, mb: 4 }}>

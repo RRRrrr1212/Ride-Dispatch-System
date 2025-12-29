@@ -46,7 +46,8 @@ public class Order {
     private Double estimatedFare;
     private Double actualFare;
     private Double distance;
-    private Integer duration; // 分鐘
+    private Integer duration; // 實際行程時長（分鐘）- 完成時使用 estimatedDuration
+    private Integer estimatedDuration; // 預估行程時長（分鐘）- startTrip 時計算
     
     private Instant createdAt;
     private Instant acceptedAt;

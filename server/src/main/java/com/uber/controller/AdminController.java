@@ -649,6 +649,70 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
     
+    /**
+     * 重置行程資料（保留司機和乘客基礎資料）
+     * 
+     * 清除：
+     * - 所有訂單
+     * - 所有審計日誌
+     * 
+     * 重置：
+     * - 司機的 busy 狀態和 currentOrderId
+     * 
+     * 保留：
+     * - 司機基礎資料（ID、姓名、電話、車牌、車種、位置）
+     * - 乘客基礎資料（ID、姓名、電話、位置、建立時間）
+     * - 費率設定
+     */
+    @PostMapping("/reset-trip-data")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> resetTripData() {
+        int ordersCleared = orderRepository.count();
+        int auditLogsCleared = auditLogRepository.count();
+        int driversReset = 0;
+        
+        // 1. 清除所有訂單
+        orderRepository.deleteAll();
+        
+        // 2. 清除所有審計日誌
+        auditLogRepository.deleteAll();
+        
+        // 3. 重置所有司機的忙碌狀態（保留其他基礎資料）
+        for (Driver driver : driverRepository.findAll()) {
+            boolean changed = false;
+            
+            if (driver.isBusy()) {
+                driver.setBusy(false);
+                changed = true;
+            }
+            if (driver.getCurrentOrderId() != null) {
+                driver.setCurrentOrderId(null);
+                changed = true;
+            }
+            // 將所有司機設為離線狀態，方便重新測試
+            if (driver.getStatus() == DriverStatus.ONLINE) {
+                driver.setStatus(DriverStatus.OFFLINE);
+                changed = true;
+            }
+            
+            if (changed) {
+                driver.setLastUpdatedAt(Instant.now());
+                driverRepository.save(driver);
+                driversReset++;
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "行程資料已重置，司機和乘客基礎資料已保留");
+        response.put("ordersCleared", ordersCleared);
+        response.put("auditLogsCleared", auditLogsCleared);
+        response.put("driversReset", driversReset);
+        response.put("ridersPreserved", riderRepository.count());
+        response.put("driversPreserved", driverRepository.count());
+        response.put("resetAt", Instant.now());
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
     // DTOs
     @Data
     static class CreateDriverRequest {
