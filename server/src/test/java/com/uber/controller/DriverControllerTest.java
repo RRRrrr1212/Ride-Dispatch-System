@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,7 +36,7 @@ class DriverControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private DriverService driverService;
 
     private Driver sampleDriver;
@@ -103,7 +103,8 @@ class DriverControllerTest {
                     .thenReturn(onlineDriver);
 
             DriverOnlineRequest request = new DriverOnlineRequest();
-            request.setLocation(new Location(20.0, 25.0));
+            request.setX(20.0);
+            request.setY(25.0);
 
             mockMvc.perform(put("/api/drivers/driver-456/online")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -224,6 +225,56 @@ class DriverControllerTest {
                     .andExpect(jsonPath("$.data.driverId").value("driver-456"))
                     .andExpect(jsonPath("$.data.name").value("王大明"));
         }
+
+        @Test
+        @DisplayName("司機包含所有選填欄位")
+        void getDriver_WithAllFields() throws Exception {
+            Driver fullDriver = Driver.builder()
+                    .driverId("driver-full")
+                    .name("完整司機")
+                    .phone("0912-345-678")
+                    .vehiclePlate("XYZ-9999")
+                    .vehicleType(VehicleType.PREMIUM)
+                    .status(DriverStatus.ONLINE)
+                    .location(new Location(25.0, 30.0))
+                    .busy(true)
+                    .currentOrderId("order-999")
+                    .lastUpdatedAt(Instant.now())
+                    .build();
+
+            when(driverService.getDriver("driver-full")).thenReturn(fullDriver);
+
+            mockMvc.perform(get("/api/drivers/driver-full"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.phone").value("0912-345-678"))
+                    .andExpect(jsonPath("$.data.vehiclePlate").value("XYZ-9999"))
+                    .andExpect(jsonPath("$.data.location").exists())
+                    .andExpect(jsonPath("$.data.currentOrderId").value("order-999"));
+        }
+
+        @Test
+        @DisplayName("司機無選填欄位時正確處理")
+        void getDriver_WithMinimalFields() throws Exception {
+            Driver minimalDriver = Driver.builder()
+                    .driverId("driver-minimal")
+                    .name("最小司機")
+                    .status(DriverStatus.OFFLINE)
+                    .vehicleType(VehicleType.STANDARD)
+                    .busy(false)
+                    .lastUpdatedAt(Instant.now())
+                    .build();
+
+            when(driverService.getDriver("driver-minimal")).thenReturn(minimalDriver);
+
+            mockMvc.perform(get("/api/drivers/driver-minimal"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.phone").doesNotExist())
+                    .andExpect(jsonPath("$.data.vehiclePlate").doesNotExist())
+                    .andExpect(jsonPath("$.data.location").doesNotExist())
+                    .andExpect(jsonPath("$.data.currentOrderId").doesNotExist());
+        }
     }
 
     @Nested
@@ -257,6 +308,18 @@ class DriverControllerTest {
 
             mockMvc.perform(get("/api/drivers")
                             .param("status", "ONLINE"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.count").value(1));
+        }
+
+        @Test
+        @DisplayName("空字串狀態參數時不篩選")
+        void getAllDrivers_WithEmptyStatus() throws Exception {
+            when(driverService.getAllDrivers()).thenReturn(List.of(sampleDriver));
+
+            mockMvc.perform(get("/api/drivers")
+                            .param("status", ""))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.count").value(1));

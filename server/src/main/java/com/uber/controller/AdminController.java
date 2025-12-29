@@ -2,20 +2,15 @@ package com.uber.controller;
 
 import com.uber.dto.ApiResponse;
 import com.uber.model.*;
-import com.uber.repository.*;
 import com.uber.service.AuditService;
 import com.uber.service.DriverService;
 import com.uber.service.FareService;
 import com.uber.service.OrderService;
-import com.uber.service.PassengerService;
-import com.uber.service.RiderService;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +18,18 @@ import java.util.stream.Collectors;
 
 /**
  * 管理員 API Controller
+ * 
+ * 實作 Issue #17: 完成 AdminController REST API
+ * 
+ * 端點:
+ * - GET /api/admin/orders          : 取得所有訂單 (支援分頁和狀態篩選)
+ * - GET /api/admin/orders/{orderId}: 取得單一訂單詳情
+ * - GET /api/admin/drivers         : 取得所有司機
+ * - GET /api/admin/audit-logs      : 取得 Audit Log (支援篩選)
+ * - GET /api/admin/accept-stats/{orderId}: 取得搶單統計 (H2 驗證用)
+ * - GET /api/admin/rate-plans      : 取得費率設定
+ * - PUT /api/admin/rate-plans/{vehicleType}: 更新費率設定
+ * - GET /api/admin/stats           : 系統統計數據
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -31,34 +38,20 @@ public class AdminController {
     
     private final OrderService orderService;
     private final DriverService driverService;
-    private final PassengerService passengerService;
-    private final RiderService riderService;
     private final AuditService auditService;
     private final FareService fareService;
-    private final OrderRepository orderRepository;
-    private final DriverRepository driverRepository;
-    private final AuditLogRepository auditLogRepository;
-    private final RiderRepository riderRepository;
     
     /**
      * 取得所有訂單 (支援分頁和狀態篩選)
+     * GET /api/admin/orders
      */
     @GetMapping("/orders")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllOrders(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String passengerId,
-            @RequestParam(required = false) String driverId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         List<Order> orders = orderService.getAllOrders();
-        
-        // 默認按時間倒序排列 (最新的在前)
-        orders.sort((o1, o2) -> {
-            if (o1.getCreatedAt() == null) return 1;
-            if (o2.getCreatedAt() == null) return -1;
-            return o2.getCreatedAt().compareTo(o1.getCreatedAt());
-        });
         
         // 狀態篩選
         if (status != null && !status.isEmpty()) {
@@ -66,24 +59,10 @@ public class AdminController {
                 OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
                 orders = orders.stream()
                         .filter(o -> o.getStatus() == orderStatus)
-                        .collect(Collectors.toList());
+                        .toList();
             } catch (IllegalArgumentException e) {
                 // 無效的狀態參數，忽略篩選
             }
-        }
-
-        // 乘客 ID 篩選
-        if (passengerId != null && !passengerId.isEmpty()) {
-            orders = orders.stream()
-                    .filter(o -> passengerId.equals(o.getPassengerId()))
-                    .collect(Collectors.toList());
-        }
-
-        // 司機 ID 篩選
-        if (driverId != null && !driverId.isEmpty()) {
-            orders = orders.stream()
-                    .filter(o -> driverId.equals(o.getDriverId()))
-                    .collect(Collectors.toList());
         }
         
         int totalElements = orders.size();
@@ -116,6 +95,7 @@ public class AdminController {
     
     /**
      * 取得單一訂單詳情
+     * GET /api/admin/orders/{orderId}
      */
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrderDetail(
@@ -126,6 +106,7 @@ public class AdminController {
     
     /**
      * 取得所有司機
+     * GET /api/admin/drivers
      */
     @GetMapping("/drivers")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllDrivers(
@@ -138,7 +119,7 @@ public class AdminController {
                 DriverStatus driverStatus = DriverStatus.valueOf(status.toUpperCase());
                 drivers = drivers.stream()
                         .filter(d -> d.getStatus() == driverStatus)
-                        .collect(Collectors.toList());
+                        .toList();
             } catch (IllegalArgumentException e) {
                 // 無效的狀態參數，忽略篩選
             }
@@ -156,35 +137,8 @@ public class AdminController {
     }
     
     /**
-     * 創建司機帳號
-     */
-    @PostMapping("/drivers")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createDriver(@RequestBody CreateDriverRequest request) {
-        Driver driver = driverService.registerDriver(
-                request.getDriverId(), 
-                request.getName(), 
-                request.getPhone(), 
-                request.getVehiclePlate(), 
-                request.getVehicleType());
-        
-        return ResponseEntity.ok(ApiResponse.success(buildDriverSummary(driver)));
-    }
-    
-    /**
-     * 創建乘客帳號
-     */
-    @PostMapping("/passengers")
-    public ResponseEntity<ApiResponse<Passenger>> createPassenger(@RequestBody CreatePassengerRequest request) {
-        Passenger passenger = passengerService.createPassenger(
-                request.getPassengerId(), 
-                request.getName(), 
-                request.getPhone());
-        
-        return ResponseEntity.ok(ApiResponse.success(passenger));
-    }
-    
-    /**
-     * 取得 Audit Log
+     * 取得 Audit Log (支援 orderId 和 action 篩選)
+     * GET /api/admin/audit-logs
      */
     @GetMapping("/audit-logs")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAuditLogs(
@@ -218,6 +172,7 @@ public class AdminController {
     
     /**
      * 取得搶單統計 (H2 驗證用)
+     * GET /api/admin/accept-stats/{orderId}
      */
     @GetMapping("/accept-stats/{orderId}")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getAcceptStats(@PathVariable String orderId) {
@@ -227,6 +182,7 @@ public class AdminController {
     
     /**
      * 取得所有費率
+     * GET /api/admin/rate-plans
      */
     @GetMapping("/rate-plans")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRatePlans() {
@@ -244,6 +200,7 @@ public class AdminController {
     
     /**
      * 更新費率
+     * PUT /api/admin/rate-plans/{vehicleType}
      */
     @PutMapping("/rate-plans/{vehicleType}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> updateRatePlan(
@@ -259,26 +216,30 @@ public class AdminController {
     
     /**
      * 系統統計數據
+     * GET /api/admin/stats
      */
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSystemStats() {
         List<Order> allOrders = orderService.getAllOrders();
         List<Driver> allDrivers = driverService.getAllDrivers();
         
+        // 訂單統計
         long pendingCount = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.PENDING).count();
         long acceptedCount = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.ACCEPTED).count();
         long ongoingCount = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.ONGOING).count();
         long completedCount = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.COMPLETED).count();
         long cancelledCount = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.CANCELLED).count();
         
+        // 收入統計
         double totalRevenue = allOrders.stream()
                 .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
                 .mapToDouble(Order::getActualFare)
                 .sum();
         
+        // 司機統計
         long onlineDrivers = allDrivers.stream().filter(d -> d.getStatus() == DriverStatus.ONLINE).count();
-        long busyDrivers = allDrivers.stream().filter(d -> d.isBusy()).count();
-        
+        long busyDrivers = allDrivers.stream().filter(Driver::isBusy).count();
+
         Map<String, Object> orderStats = new HashMap<>();
         orderStats.put("total", allOrders.size());
         orderStats.put("pending", pendingCount);
@@ -746,16 +707,6 @@ public class AdminController {
     
     // ========== 私有方法 ==========
     
-    private Map<String, Object> buildRiderSummary(Rider rider) {
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("riderId", rider.getRiderId());
-        summary.put("name", rider.getName());
-        summary.put("phone", rider.getPhone());
-        summary.put("location", rider.getLocation());
-        summary.put("createdAt", rider.getCreatedAt());
-        return summary;
-    }
-    
     private Map<String, Object> buildOrderSummary(Order order) {
         Map<String, Object> summary = new HashMap<>();
         summary.put("orderId", order.getOrderId());
@@ -763,11 +714,6 @@ public class AdminController {
         summary.put("status", order.getStatus().name());
         summary.put("vehicleType", order.getVehicleType().name());
         summary.put("createdAt", order.getCreatedAt());
-        
-        // 加入地點資訊，讓列表也能顯示地址
-        summary.put("pickupLocation", order.getPickupLocation());
-        summary.put("dropoffLocation", order.getDropoffLocation());
-        summary.put("estimatedFare", order.getEstimatedFare());
         
         if (order.getDriverId() != null) {
             summary.put("driverId", order.getDriverId());

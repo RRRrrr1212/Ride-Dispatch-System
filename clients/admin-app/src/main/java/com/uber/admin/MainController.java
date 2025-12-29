@@ -25,7 +25,6 @@ import javafx.util.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -184,7 +183,7 @@ public class MainController {
         topBar.setAlignment(Pos.CENTER_LEFT);
         
         // 統計卡片
-        totalOrdersLabel = createStatLabel("總訂單", "0", Theme.UBER_GREEN);
+        totalOrdersLabel = createStatLabel("總訂單", "0", Theme.PRIMARY);
         pendingOrdersLabel = createStatLabel("待處理", "0", Theme.WARNING);
         completedOrdersLabel = createStatLabel("已完成", "0", Theme.SUCCESS);
         onlineDriversLabel = createStatLabel("上線司機", "0", "#9C27B0");

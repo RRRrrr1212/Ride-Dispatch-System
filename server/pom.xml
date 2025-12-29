@@ -15,13 +15,19 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.1</version>
+        <version>3.4.1</version>
         <relativePath/>
     </parent>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>23</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <lombok.version>1.18.36</lombok.version>
+        <mockito.version>5.14.2</mockito.version>
+
+        <!-- ✅ JaCoCo 升級：支援 Java 23 -->
+        <jacoco.version>0.8.13</jacoco.version>
     </properties>
 
     <dependencies>
@@ -41,13 +47,38 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-junit-jupiter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Override Mockito to support newer JDKs -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -68,11 +99,29 @@
                 </configuration>
             </plugin>
 
+            <!-- Compiler Plugin (enable Lombok annotation processing) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <!-- ✅ 保險：明確用 release=23 -->
+                    <release>${java.version}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
             <!-- JaCoCo Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -89,6 +138,7 @@
                     </execution>
                     <execution>
                         <id>check</id>
+                        <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -97,10 +147,17 @@
                                 <rule>
                                     <element>BUNDLE</element>
                                     <limits>
+                                        <!-- Line Coverage >= 80% -->
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.80</minimum>
+                                        </limit>
+                                        <!-- Branch Coverage >= 90% -->
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.90</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
