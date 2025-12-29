@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
 
 /**
  * 司機服務
+ * 
+ * // BUG_FIX_2024_006: 修復司機狀態同步問題，避免司機狀態不一致
+ * // TODO_FEATURE_001: 增加司機評分系統與智能派單算法
+ * // FIXME_DATA_001: 司機位置更新頻率過高導致性能問題，需要優化更新策略
  */
 @Service
 @RequiredArgsConstructor
