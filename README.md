@@ -14,9 +14,10 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   JavaFX Clients (三視窗)                    │
+│                   Web Clients (React + PWA)                 │
 ├──────────────┬──────────────────┬───────────────────────────┤
 │ Passenger App│   Driver App     │      Admin Console        │
+│ (/rider)     │   (/driver)      │      (/admin)             │
 └──────┬───────┴────────┬─────────┴─────────────┬─────────────┘
        │                │                       │
        │         HTTP/REST (Polling)            │
@@ -29,7 +30,8 @@
 ### 通訊方式
 - **協定**: HTTP/REST
 - **資料格式**: JSON
-- **即時同步**: Polling (每 0.5-1 秒輪詢)
+- **即時同步**: Polling (每 1-3 秒輪詢)
+- **地圖整合**: OpenStreetMap (Leaflet) + OSRM (路徑規劃)
 
 ## 📁 專案結構
 
@@ -44,15 +46,25 @@ ride-dispatch-system/
 │   │       └── repository/    # Data Access
 │   └── pom.xml
 │
-├── clients/                   # JavaFX 前端
-│   ├── passenger-app/         # 乘客端視窗
-│   ├── driver-app/            # 司機端視窗
-│   └── admin-console/         # 管理後台視窗
+├── clients/
+│   └── web-client/            # React 前端應用 (取代 JavaFX)
+│       ├── src/
+│       │   ├── pages/         # 頁面 (Rider, Driver, Admin)
+│       │   ├── components/    # 共用元件 (Map, UI)
+│       │   └── api/           # API 串接
+│       └── package.json
 │
 ├── docs/                      # 文件
-│   ├── state-machine.md       # 狀態機合約 ⭐
-│   ├── api-spec.md            # API 規格 ⭐
-│   └── SYSTEM_SPEC.md         # 系統規格書
+│   ├── specs/                 # 後端規格書
+│   │   ├── state-machine.md   # 狀態機合約 ⭐
+│   │   ├── api-spec.md        # API 規格 ⭐
+│   │   └── SYSTEM_SPEC.md     # 系統規格書
+│   │
+│   ├── web-client/            # 前端開發文件
+│   │   ├── 00_OVERVIEW.md     # 前端架構總覽
+│   │   └── ...
+│   │
+│   └── reports/               # 階段性報告
 │
 └── README.md
 ```
@@ -60,23 +72,26 @@ ride-dispatch-system/
 ## 🚀 快速開始
 
 ### 環境需求
-- Java 23+
+- Java 21+
 - Maven 3.9+
-- JavaFX 23+
+- Node.js 18+ (前端)
 
-### 啟動後端
+### 1. 啟動後端
 ```bash
 cd server
 mvn spring-boot:run
 ```
 
-### 啟動前端 (三視窗)
+### 2. 啟動前端 (Web Client)
 ```bash
-cd clients
-mvn javafx:run -pl passenger-app
-mvn javafx:run -pl driver-app
-mvn javafx:run -pl admin-console
+cd clients/web-client
+npm install
+npm run dev
 ```
+啟動後請訪問:
+- **乘客端**: `http://localhost:5173/rider`
+- **司機端**: `http://localhost:5173/driver`
+- **管理後台**: `http://localhost:5173/admin`
 
 ## 🧪 測試重點
 
@@ -96,65 +111,31 @@ mvn javafx:run -pl admin-console
 
 ### 執行測試
 ```bash
-# 執行所有測試
+# 執行所有後端測試
+cd server
 mvn test
 
 # 產生覆蓋率報告
 mvn jacoco:report
-
-# 產生 PMD 報告
-mvn pmd:pmd
 ```
 
 ## 📖 核心文件
 
 | 文件 | 說明 | 組員用途 |
 |-----|------|---------|
-| [docs/state-machine.md](docs/state-machine.md) | 狀態機合約 | 撰寫狀態機測試 |
-| [docs/api-spec.md](docs/api-spec.md) | API 規格 | 撰寫整合測試 |
-| [docs/SYSTEM_SPEC.md](docs/SYSTEM_SPEC.md) | 系統規格書 | 報告撰寫參考 |
-
-## 🔧 開發指南
-
-### API 端點總覽
-
-#### Passenger API
-| Method | Endpoint | 說明 |
-|--------|----------|-----|
-| POST | `/api/orders` | 建立叫車 |
-| GET | `/api/orders/{id}` | 查詢狀態 |
-| PUT | `/api/orders/{id}/cancel` | 取消訂單 |
-
-#### Driver API
-| Method | Endpoint | 說明 |
-|--------|----------|-----|
-| PUT | `/api/drivers/{id}/online` | 上線 |
-| GET | `/api/drivers/{id}/offers` | 取得可接單 |
-| PUT | `/api/orders/{id}/accept` | 接單 |
-| PUT | `/api/orders/{id}/start` | 開始行程 |
-| PUT | `/api/orders/{id}/complete` | 完成行程 |
-
-#### Admin API
-| Method | Endpoint | 說明 |
-|--------|----------|-----|
-| GET | `/api/admin/orders` | 所有訂單 |
-| GET | `/api/admin/audit-logs` | Audit Log |
-
-## 📊 測試覆蓋率目標
-
-| 指標 | 目標 |
-|-----|-----|
-| Branch Coverage | ≥ 90% |
+| [docs/specs/state-machine.md](docs/specs/state-machine.md) | 狀態機合約 | 撰寫狀態機測試 |
+| [docs/specs/api-spec.md](docs/specs/api-spec.md) | API 規格 | 撰寫整合測試 |
+| [docs/web-client/00_OVERVIEW.md](docs/web-client/00_OVERVIEW.md) | 前端總覽 | 前端開發參考 |
 
 ## 👥 團隊分工
 
 | 角色 | 負責項目 |
 |-----|---------|
 | 後端開發 | Spring Boot Server、核心邏輯 |
-| 前端開發 | JavaFX 三視窗 |
+| 前端開發 | React Web App (PWA) |
 | 測試 | JUnit 單元/整合/併發測試 |
 
 ---
 
-**版本**: v0.1  
-**更新日期**: 2025-12-25
+**版本**: v1.1
+**更新日期**: 2025-12-29
