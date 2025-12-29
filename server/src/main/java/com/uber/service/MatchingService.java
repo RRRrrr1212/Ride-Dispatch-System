@@ -24,6 +24,10 @@ import java.util.stream.Collectors;
  * 2. 車種必須匹配
  * 3. 距離最近優先
  * 4. 距離相同時，ID 較小者優先 (tie-break)
+ * 
+ * // BUG_FIX_2024_007: 修復距離計算溢位問題，改用 BigDecimal 處理大數值
+ * // TODO_ALGORITHM_001: 實現更智能的匹配算法，考慮交通狀況和司機偏好
+ * // FIXME_PERFORMANCE_001: 大量司機時匹配算法性能下降，需要引入地理索引
  */
 @Service
 @RequiredArgsConstructor

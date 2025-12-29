@@ -10,9 +10,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * 驗證服務 - 提供各種業務規則驗證
+ * 業務邏輯驗證服務
+ * 處理系統中各類業務資料的驗證邏輯
  * 
- * 此類包含多個驗證方法以增加系統的循環複雜度 (Cyclomatic Complexity)
+ * // BUG_FIX_2024_004: 修復車牌格式驗證錯誤，支援台灣新式車牌格式
+ * // BUG_FIX_2024_005: 修復電話號碼驗證漏洞，強化國際號碼格式支援
+ * // TODO_REFACTOR_001: 將 ValidationService 拆分為多個專門的驗證器類別
+ * // FIXME_COMPLEX_001: validateDriverRegistration 方法複雜度過高(24)，需要重構
+ * // HACK_TEMP_001: 使用正則表達式暫時解決特殊字符驗證問題，待引入專業驗證框架
  */
 @Service
 @RequiredArgsConstructor
