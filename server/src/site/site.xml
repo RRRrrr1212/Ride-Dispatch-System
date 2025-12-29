@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/DECORATION/1.8.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 
+                             http://maven.apache.org/xsd/decoration-1.8.0.xsd"
+         name="Ride Dispatch System">
+
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>1.11.1</version>
+    </skin>
+
+    <bannerLeft>
+        <name>Ride Dispatch System</name>
+        <href>https://github.com/ivan/ride-dispatch-system</href>
+    </bannerLeft>
+
+    <publishDate position="right"/>
+    <version position="right"/>
+
+    <body>
+        <menu name="項目資訊">
+            <item name="關於" href="project-info.html"/>
+            <item name="項目摘要" href="project-summary.html"/>
+            <item name="依賴項" href="dependencies.html"/>
+            <item name="插件" href="plugins.html"/>
+        </menu>
+
+        <menu name="測試報告">
+            <item name="測試結果" href="surefire-report.html"/>
+            <item name="測試覆蓋率" href="jacoco/index.html"/>
+        </menu>
+
+        <menu name="代碼質量">
+            <item name="PMD 分析" href="pmd.html"/>
+            <item name="SpotBugs 報告" href="spotbugs.html"/>
+            <item name="代碼重複" href="cpd.html"/>
+        </menu>
+
+        <menu name="文檔">
+            <item name="JavaDoc" href="apidocs/index.html"/>
+            <item name="源代碼" href="xref/index.html"/>
+            <item name="測試源代碼" href="xref-test/index.html"/>
+        </menu>
+    </body>
+</project>
