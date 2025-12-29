@@ -159,6 +159,20 @@ public class OrderService {
         
         order.setStatus(OrderStatus.ONGOING);
         order.setStartedAt(Instant.now());
+        
+        // 計算預估行程時間（基於距離和假設速度 45km/h）
+        // 這樣行程中顯示的 ETA 和完成後顯示的時長一致
+        if (order.getDistance() != null && order.getDistance() > 0) {
+            // 距離單位為 km，速度 45km/h
+            // 加上 1.3 倍係數模擬實際道路距離 vs 直線距離
+            double estimatedRoadDistance = order.getDistance() * 1.3;
+            int estimatedMinutes = (int) Math.ceil((estimatedRoadDistance / 45.0) * 60.0);
+            // 確保最少 1 分鐘
+            order.setEstimatedDuration(Math.max(1, estimatedMinutes));
+            log.info("Estimated trip duration for order {}: {} minutes (distance: {} km)", 
+                    orderId, order.getEstimatedDuration(), order.getDistance());
+        }
+        
         orderRepository.save(order);
         
         auditService.logSuccess(orderId, "START", "DRIVER", 
@@ -188,10 +202,19 @@ public class OrderService {
             throw new BusinessException("NOT_ASSIGNED_DRIVER", "您不是此訂單的指派司機", 403);
         }
         
-        // 計算實際車資
-        Instant startTime = order.getStartedAt();
+        // 使用預估時間作為 duration（確保與行程中顯示的 ETA 一致）
+        // 如果沒有預估時間，才使用真實時間
         Instant endTime = Instant.now();
-        int duration = (int) ((endTime.toEpochMilli() - startTime.toEpochMilli()) / 60000);
+        int duration;
+        if (order.getEstimatedDuration() != null && order.getEstimatedDuration() > 0) {
+            duration = order.getEstimatedDuration();
+            log.info("Using estimated duration for order {}: {} minutes", orderId, duration);
+        } else {
+            // 回退：使用真實時間計算
+            Instant startTime = order.getStartedAt();
+            duration = (int) Math.max(1, (endTime.toEpochMilli() - startTime.toEpochMilli()) / 60000);
+            log.info("Using real duration for order {}: {} minutes", orderId, duration);
+        }
         
         double fare = fareService.calculateFare(
                 order.getVehicleType(), 

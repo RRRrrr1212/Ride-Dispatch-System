@@ -106,6 +106,7 @@ public class OrderController {
         response.put("orderId", order.getOrderId());
         response.put("status", order.getStatus().name());
         response.put("startedAt", order.getStartedAt());
+        response.put("estimatedDuration", order.getEstimatedDuration()); // 預估行程時間（分鐘）
         
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -188,6 +189,10 @@ public class OrderController {
         }
         if (order.getStartedAt() != null) {
             response.put("startedAt", order.getStartedAt());
+            // 加入預估行程時間（行程開始後的 ETA 參考）
+            if (order.getEstimatedDuration() != null) {
+                response.put("estimatedDuration", order.getEstimatedDuration());
+            }
         }
         if (order.getCompletedAt() != null) {
             response.put("completedAt", order.getCompletedAt());

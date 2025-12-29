@@ -98,4 +98,16 @@ export const adminApi = {
   // 清除所有資料
   clearAll: () =>
     apiClient.delete<ApiResponse<{ message: string; clearedAt: string }>>('/admin/clear-all'),
+  
+  // 重置行程資料（保留司機和乘客基礎資料）
+  resetTripData: () =>
+    apiClient.post<ApiResponse<{ 
+      message: string; 
+      ordersCleared: number; 
+      auditLogsCleared: number; 
+      driversReset: number;
+      ridersPreserved: number;
+      driversPreserved: number;
+      resetAt: string;
+    }>>('/admin/reset-trip-data'),
 };
