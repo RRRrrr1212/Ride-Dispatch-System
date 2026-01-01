@@ -32,6 +32,7 @@ export function DriverAppLayout() {
       if (!user || user.role !== 'driver') return;
 
       let currentDriver = driver;
+      const isNewSession = !currentDriver; // 紀錄是否為新登入 (沒有 driver 資料)
 
       // 1. 如果本地沒有 driver，先建立一個 (Demo 資料)
       if (!currentDriver) {
@@ -46,6 +47,8 @@ export function DriverAppLayout() {
           busy: false,
         };
         setDriver(currentDriver);
+        // 新登入時，確保前端狀態為離線
+        useDriverStore.setState({ isOnline: false });
       }
 
       // 2. 檢查後端是否存在此司機，若不存在則補註冊 (解決後端重啟問題)
@@ -55,12 +58,23 @@ export function DriverAppLayout() {
           const remoteDriver = response.data.data;
           setDriver(remoteDriver);
           
-          // 同步後端狀態
-          const isRemoteOnline = remoteDriver.status === 'ONLINE' || remoteDriver.status === 'BUSY';
-          console.log(`[DriverSync] Local: ${isOnline}, Remote: ${isRemoteOnline} (${remoteDriver.status})`);
-          
-          if (isOnline !== isRemoteOnline) {
-            useDriverStore.setState({ isOnline: isRemoteOnline });
+          // 同步後端狀態 (只有非新登入時才同步)
+          // 如果是新登入 (登出後重新登入)，強制保持離線狀態
+          if (!isNewSession) {
+            const isRemoteOnline = remoteDriver.status === 'ONLINE' || remoteDriver.status === 'BUSY';
+            console.log(`[DriverSync] Local: ${isOnline}, Remote: ${isRemoteOnline} (${remoteDriver.status})`);
+            
+            if (isOnline !== isRemoteOnline) {
+              useDriverStore.setState({ isOnline: isRemoteOnline });
+            }
+          } else {
+            // 新登入時，確保後端也是離線狀態
+            console.log('[DriverSync] 新登入，強制保持離線狀態');
+            if (remoteDriver.status === 'ONLINE' || remoteDriver.status === 'BUSY') {
+              driverApi.goOffline(user.id).catch(err => {
+                console.warn('新登入時強制下線失敗:', err);
+              });
+            }
           }
         }
       } catch (error) {
@@ -75,15 +89,8 @@ export function DriverAppLayout() {
           });
           console.log('司機自動註冊成功');
           
-          // 如果前端顯示為上線，但後端剛重啟(默認離線)，這裡應該同步後端狀態，或者強制後端上線
-          // 為了體驗平順，如果前端是 isOnline，我們嘗試幫他 goOnline
-          if (isOnline) {
-             // 稍微延遲一下確保註冊完成
-             setTimeout(() => {
-                 driverApi.goOnline(currentDriver!.driverId, { x: 120.6469, y: 24.1618 })
-                   .catch(e => console.error('自動上線失敗', e));
-             }, 500);
-          }
+          // 新登入時不自動上線，保持離線狀態
+          // 使用者需要手動切換上線
           
         } catch (regError: any) {
           // 409 代表已存在，忽略
@@ -95,7 +102,7 @@ export function DriverAppLayout() {
     };
     
     initDriver();
-    // 依賴列表只監聽 user，不監聽 driver，避免 driver 變更造成的無限迴圈
+    // 依賴列表只監聽 user，不監聯 driver，避免 driver 變更造成的無限迴圈
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

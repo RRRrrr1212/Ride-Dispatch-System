@@ -347,11 +347,20 @@ export function DashboardPage() {
 
 
 
-  // 拒絕訂單
-  const handleDecline = (orderId: string) => {
-    if (window.confirm('確定要拒絕此訂單嗎？')) {
-      ignoredOrdersRef.add(orderId);
-      setOffers(prev => prev.filter(o => o.orderId !== orderId));
+  // 拒絕訂單 (呼叫後端 API 觸發重新配對)
+  const handleDecline = async (orderId: string) => {
+    if (!driver) return;
+    
+    if (window.confirm('確定要拒絕此訂單嗎？訂單將重新配對給其他司機。')) {
+      try {
+        await orderApi.decline(orderId, driver.driverId);
+        // 從本地列表移除
+        setOffers(prev => prev.filter(o => o.orderId !== orderId));
+      } catch (error: any) {
+        console.error('拒絕訂單失敗:', error);
+        // 即使 API 失敗，也從本地列表移除（避免卡住）
+        setOffers(prev => prev.filter(o => o.orderId !== orderId));
+      }
     }
   };
 

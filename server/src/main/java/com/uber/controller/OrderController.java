@@ -3,6 +3,7 @@ package com.uber.controller;
 import com.uber.dto.AcceptOrderRequest;
 import com.uber.dto.ApiResponse;
 import com.uber.dto.CancelOrderRequest;
+import com.uber.dto.CompleteOrderRequest;
 import com.uber.dto.CreateOrderRequest;
 import com.uber.model.Order;
 import com.uber.model.OrderStatus;
@@ -120,8 +121,9 @@ public class OrderController {
     @PutMapping("/{orderId}/complete")
     public ResponseEntity<ApiResponse<Map<String, Object>>> completeTrip(
             @PathVariable String orderId,
-            @Valid @RequestBody AcceptOrderRequest request) {
-        Order order = orderService.completeTrip(orderId, request.getDriverId());
+            @Valid @RequestBody CompleteOrderRequest request) {
+        // 傳入模擬時間（如果有的話）
+        Order order = orderService.completeTrip(orderId, request.getDriverId(), request.getSimulatedDuration());
         
         // 計算費用明細
         var ratePlan = fareService.getRatePlan(order.getVehicleType());
@@ -163,6 +165,27 @@ public class OrderController {
         response.put("cancelledAt", order.getCancelledAt());
         response.put("cancelledBy", order.getCancelledBy());
         response.put("cancelFee", order.getCancelFee());
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 司機拒絕訂單 (重新配對給下一個司機)
+     * PUT /api/orders/{orderId}/decline
+     */
+    @PutMapping("/{orderId}/decline")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> declineOrder(
+            @PathVariable String orderId,
+            @Valid @RequestBody AcceptOrderRequest request) {
+        Order order = orderService.declineOrder(orderId, request.getDriverId());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("orderId", order.getOrderId());
+        response.put("status", order.getStatus().name());
+        response.put("assignedDriverId", order.getAssignedDriverId());
+        response.put("message", order.getAssignedDriverId() != null 
+                ? "訂單已重新配對給其他司機" 
+                : "目前沒有其他可用司機，訂單等待中");
         
         return ResponseEntity.ok(ApiResponse.success(response));
     }

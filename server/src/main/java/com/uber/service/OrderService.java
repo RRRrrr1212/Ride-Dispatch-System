@@ -33,6 +33,8 @@ public class OrderService {
     
     /**
      * 建立叫車請求
+     * 
+     * 自動配對：訂單建立時會自動找到最近的司機並指派給他
      */
     public Order createOrder(String passengerId, Location pickup, 
                             Location dropoff, VehicleType vehicleType) {
@@ -65,6 +67,14 @@ public class OrderService {
         double distance = pickup.distanceTo(dropoff);
         double estimatedFare = fareService.calculateEstimatedFare(vehicleType, distance);
         
+        // 自動配對：找到最近的可用司機
+        String assignedDriverId = findBestDriverId(pickup, vehicleType);
+        if (assignedDriverId != null) {
+            log.info("Order auto-assigned to driver: {}", assignedDriverId);
+        } else {
+            log.warn("No available driver found for order with vehicleType: {}", vehicleType);
+        }
+        
         Order order = Order.builder()
                 .orderId(UUID.randomUUID().toString())
                 .passengerId(passengerId)
@@ -74,6 +84,7 @@ public class OrderService {
                 .dropoffLocation(dropoff)
                 .estimatedFare(estimatedFare)
                 .distance(distance)
+                .assignedDriverId(assignedDriverId)  // 設定指派的司機
                 .createdAt(Instant.now())
                 .build();
         
@@ -82,8 +93,33 @@ public class OrderService {
         auditService.logSuccess(order.getOrderId(), "CREATE", "PASSENGER", 
                 passengerId, "NONE", "PENDING");
         
-        log.info("Order created: {}", order.getOrderId());
+        log.info("Order created: {} (assigned to: {})", order.getOrderId(), assignedDriverId);
         return enrichOrder(order);
+    }
+    
+    /**
+     * 找到最佳匹配司機（最近且可用的司機）
+     * 
+     * @return 最佳司機 ID，若無則返回 null
+     */
+    private String findBestDriverId(Location pickupLocation, VehicleType requiredType) {
+        return driverRepository.findAll().stream()
+                // 篩選條件: ONLINE 且非 Busy
+                .filter(driver -> driver.getStatus() == DriverStatus.ONLINE)
+                .filter(driver -> !driver.isBusy())
+                // 篩選車種
+                .filter(driver -> driver.getVehicleType() == requiredType)
+                // 檢查是否有位置資訊
+                .filter(driver -> driver.getLocation() != null)
+                // 按距離排序
+                .min((d1, d2) -> {
+                    double dist1 = d1.getLocation().distanceTo(pickupLocation);
+                    double dist2 = d2.getLocation().distanceTo(pickupLocation);
+                    int cmp = Double.compare(dist1, dist2);
+                    return cmp != 0 ? cmp : d1.getDriverId().compareTo(d2.getDriverId());
+                })
+                .map(Driver::getDriverId)
+                .orElse(null);
     }
     
     /**
@@ -144,6 +180,13 @@ public class OrderService {
                  throw new BusinessException("VEHICLE_TYPE_MISMATCH", "您的車種不符合此訂單需求");
             }
             
+            // 檢查是否為被指派的司機 (獨佔派單)
+            if (order.getAssignedDriverId() != null && !driverId.equals(order.getAssignedDriverId())) {
+                auditService.logFailure(orderId, "ACCEPT", "DRIVER", 
+                        driverId, "PENDING", "NOT_ASSIGNED_DRIVER");
+                throw new BusinessException("NOT_ASSIGNED_DRIVER", "此訂單未指派給您", 403);
+            }
+            
             // 執行接單
             order.setStatus(OrderStatus.ACCEPTED);
             order.setDriverId(driverId);
@@ -199,9 +242,20 @@ public class OrderService {
     }
     
     /**
-     * 完成行程
+     * 完成行程 (使用實際時間計算 duration)
      */
     public Order completeTrip(String orderId, String driverId) {
+        return completeTrip(orderId, driverId, null);
+    }
+    
+    /**
+     * 完成行程 (支援模擬時間)
+     * 
+     * @param orderId 訂單 ID
+     * @param driverId 司機 ID
+     * @param simulatedDuration 前端傳入的模擬行程時間（分鐘），若為 null 則使用實際時間
+     */
+    public Order completeTrip(String orderId, String driverId, Integer simulatedDuration) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException("ORDER_NOT_FOUND", "訂單不存在"));
         
@@ -218,10 +272,19 @@ public class OrderService {
             throw new BusinessException("NOT_ASSIGNED_DRIVER", "您不是此訂單的指派司機", 403);
         }
         
-        // 計算實際車資
-        Instant startTime = order.getStartedAt();
+        // 計算行程時間：優先使用前端傳入的模擬時間，否則使用實際時間差
         Instant endTime = Instant.now();
-        int duration = (int) ((endTime.toEpochMilli() - startTime.toEpochMilli()) / 60000);
+        int duration;
+        if (simulatedDuration != null && simulatedDuration > 0) {
+            duration = simulatedDuration;
+            log.info("Using simulated duration: {} minutes for order {}", duration, orderId);
+        } else {
+            Instant startTime = order.getStartedAt();
+            duration = (int) ((endTime.toEpochMilli() - startTime.toEpochMilli()) / 60000);
+            log.info("Using actual duration: {} minutes for order {}", duration, orderId);
+        }
+        // 確保至少為 1 分鐘
+        duration = Math.max(1, duration);
         
         double fare = fareService.calculateFare(
                 order.getVehicleType(), 
@@ -261,6 +324,66 @@ public class OrderService {
         
         log.info("Trip completed for order {}, fare: {}, driver earnings: {}", orderId, fare, driverEarnings);
         return enrichOrder(order);
+    }
+    
+    /**
+     * 司機拒絕訂單 (重新配對給下一個司機)
+     * 
+     * @param orderId 訂單 ID
+     * @param driverId 拒絕的司機 ID
+     * @return 更新後的訂單
+     */
+    public Order declineOrder(String orderId, String driverId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("ORDER_NOT_FOUND", "訂單不存在"));
+        
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BusinessException("INVALID_STATE", "只有待接訂單可以拒絕");
+        }
+        
+        // 確認是被指派的司機才能拒絕
+        if (!driverId.equals(order.getAssignedDriverId())) {
+            throw new BusinessException("NOT_ASSIGNED_DRIVER", "您不是此訂單的指派司機", 403);
+        }
+        
+        // 找到下一個最近的可用司機 (排除拒絕的司機)
+        String nextDriverId = findNextBestDriverId(order.getPickupLocation(), order.getVehicleType(), driverId);
+        
+        if (nextDriverId != null) {
+            order.setAssignedDriverId(nextDriverId);
+            log.info("Order {} reassigned from {} to {}", orderId, driverId, nextDriverId);
+        } else {
+            // 沒有其他可用司機，清除指派 (訂單將持續等待)
+            order.setAssignedDriverId(null);
+            log.warn("No other driver available for order {}, waiting for new drivers", orderId);
+        }
+        
+        orderRepository.save(order);
+        
+        auditService.logSuccess(orderId, "DECLINE", "DRIVER", 
+                driverId, "PENDING", "PENDING");
+        
+        return enrichOrder(order);
+    }
+    
+    /**
+     * 找到下一個最佳匹配司機（排除指定司機）
+     */
+    private String findNextBestDriverId(Location pickupLocation, VehicleType requiredType, String excludeDriverId) {
+        return driverRepository.findAll().stream()
+                .filter(driver -> driver.getStatus() == DriverStatus.ONLINE)
+                .filter(driver -> !driver.isBusy())
+                .filter(driver -> driver.getVehicleType() == requiredType)
+                .filter(driver -> driver.getLocation() != null)
+                .filter(driver -> !driver.getDriverId().equals(excludeDriverId)) // 排除拒絕的司機
+                .min((d1, d2) -> {
+                    double dist1 = d1.getLocation().distanceTo(pickupLocation);
+                    double dist2 = d2.getLocation().distanceTo(pickupLocation);
+                    int cmp = Double.compare(dist1, dist2);
+                    return cmp != 0 ? cmp : d1.getDriverId().compareTo(d2.getDriverId());
+                })
+                .map(Driver::getDriverId)
+                .orElse(null);
     }
     
     /**

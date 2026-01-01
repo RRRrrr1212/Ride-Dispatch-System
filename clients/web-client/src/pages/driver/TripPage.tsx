@@ -463,7 +463,20 @@ export function TripPage() {
           .catch(err => console.warn('更新位置失敗', err));
       }
       
-      const response = await orderApi.complete(orderId, driver.driverId);
+      // 計算模擬的行程時間（分鐘）
+      // 基於 localStorage 記錄的模擬開始時間
+      let simulatedDuration: number | undefined;
+      const key = `trip_sim_start_${orderId}`;
+      const simStartStr = localStorage.getItem(key);
+      if (simStartStr) {
+        const simStart = parseInt(simStartStr, 10);
+        const elapsedMs = Date.now() - simStart;
+        // 將毫秒轉換為分鐘，確保至少為 1 分鐘
+        simulatedDuration = Math.max(1, Math.round(elapsedMs / 60000));
+        console.log(`[TripPage] 模擬行程時間: ${simulatedDuration} 分鐘 (經過 ${elapsedMs}ms)`);
+      }
+      
+      const response = await orderApi.complete(orderId, driver.driverId, simulatedDuration);
       if (response.data.success) {
         alert('行程完成！');
         localStorage.removeItem(`trip_sim_start_${orderId}`);

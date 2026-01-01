@@ -9,9 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 司機服務
@@ -82,17 +80,12 @@ public class DriverService {
         driverRepository.save(driver);
         return driver;
     }
-    
     /**
-     * 取得可接訂單列表 (配對演算法)
+     * 取得可接訂單列表 (獨佔派單)
      * 
-     * 篩選規則:
-     * 1. 訂單狀態為 PENDING
-     * 2. 車種符合司機車種
-     * 
-     * 排序規則:
-     * 1. 距離最近優先
-     * 2. 距離相同則 orderId 較小者優先 (tie-break)
+     * 一次只返回一張訂單，確保司機不能挑選訂單：
+     * 1. 優先返回已指派給這個司機的訂單
+     * 2. 如果沒有已指派的訂單，嘗試動態配對一張未指派的訂單
      */
     public List<Order> getOffers(String driverId) {
         Driver driver = driverRepository.findById(driverId)
@@ -106,18 +99,93 @@ public class DriverService {
             return List.of(); // 忙碌中不顯示新訂單
         }
         
-        Location driverLocation = driver.getLocation();
         VehicleType driverVehicleType = driver.getVehicleType();
+        Location driverLocation = driver.getLocation();
         
-        // 只返回最近的一筆訂單，避免司機一次看到多張單造成混淆
-        return orderRepository.findByStatus(OrderStatus.PENDING).stream()
-                .filter(order -> order.getVehicleType() == driverVehicleType)
-                .sorted(Comparator
-                        .comparingDouble((Order o) -> driverLocation.distanceTo(o.getPickupLocation()))
-                        .thenComparing(Order::getOrderId))
-                .limit(1) // 一次只派一張單
-                .map(this::enrichOrder)
-                .collect(Collectors.toList());
+        // Step 1: 優先查找已指派給這個司機的訂單
+        for (Order order : orderRepository.findByStatus(OrderStatus.PENDING)) {
+            if (order.getVehicleType() == driverVehicleType && 
+                driverId.equals(order.getAssignedDriverId())) {
+                // 返回第一張已指派的訂單 (一次只返回一張)
+                return List.of(enrichOrder(order));
+            }
+        }
+        
+        // Step 2: 沒有已指派的訂單，嘗試動態配對一張未指派的訂單
+        if (driverLocation != null) {
+            // 找到離司機最近的未配對訂單
+            Order closestOrder = null;
+            double closestDistance = Double.MAX_VALUE;
+            
+            for (Order order : orderRepository.findByStatus(OrderStatus.PENDING)) {
+                if (order.getVehicleType() != driverVehicleType) {
+                    continue;
+                }
+                if (order.getAssignedDriverId() != null) {
+                    continue; // 已被其他司機指派
+                }
+                if (order.getPickupLocation() == null) {
+                    continue;
+                }
+                
+                // 檢查這個司機是否是最近的可用司機
+                if (isClosestAvailableDriver(order, driver)) {
+                    double distance = driverLocation.distanceTo(order.getPickupLocation());
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestOrder = order;
+                    }
+                }
+            }
+            
+            if (closestOrder != null) {
+                // 動態配對給這個司機
+                closestOrder.setAssignedDriverId(driverId);
+                orderRepository.save(closestOrder);
+                return List.of(enrichOrder(closestOrder));
+            }
+        }
+        
+        return List.of(); // 沒有可接的訂單
+    }
+    
+    /**
+     * 檢查指定司機是否是訂單的最近可用司機
+     */
+    private boolean isClosestAvailableDriver(Order order, Driver targetDriver) {
+        if (order.getPickupLocation() == null || targetDriver.getLocation() == null) {
+            return false;
+        }
+        
+        double targetDistance = targetDriver.getLocation().distanceTo(order.getPickupLocation());
+        
+        // 檢查是否有更近的可用司機
+        for (Driver other : driverRepository.findAll()) {
+            if (other.getDriverId().equals(targetDriver.getDriverId())) {
+                continue; // 跳過自己
+            }
+            if (other.getStatus() != DriverStatus.ONLINE || other.isBusy()) {
+                continue; // 跳過不可用的司機
+            }
+            if (other.getVehicleType() != order.getVehicleType()) {
+                continue; // 跳過車種不符的司機
+            }
+            if (other.getLocation() == null) {
+                continue;
+            }
+            
+            double otherDistance = other.getLocation().distanceTo(order.getPickupLocation());
+            if (otherDistance < targetDistance) {
+                return false; // 有更近的司機
+            }
+            // Tie-break: ID 較小者優先
+            if (otherDistance == targetDistance && 
+                other.getDriverId().compareTo(targetDriver.getDriverId()) < 0) {
+                return false;
+            }
+        }
+        
+        return true; // 這個司機是最近的
     }
 
     private Order enrichOrder(Order order) {

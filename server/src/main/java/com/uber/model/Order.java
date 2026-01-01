@@ -54,6 +54,9 @@ public class Order {
     private Instant completedAt;
     private Instant cancelledAt;
     
+    // 指派的司機 ID (訂單建立時會自動配對最近的司機，只有該司機能看到此訂單)
+    private String assignedDriverId;
+    
     private String cancelledBy;
     private Double cancelFee;
     
