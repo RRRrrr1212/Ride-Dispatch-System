@@ -213,9 +213,10 @@ class DriverServiceTest {
             // When
             List<Order> offers = driverService.getOffers("driver-1");
             
-            // Then - 只有 STANDARD 訂單
-            assertEquals(2, offers.size());
-            assertTrue(offers.stream().allMatch(o -> o.getVehicleType() == VehicleType.STANDARD));
+            // Then - 根據獨佔派單邏輯，只會回傳最近的一張 STANDARD 訂單 (order-2)
+            assertEquals(1, offers.size());
+            assertEquals("order-2", offers.get(0).getOrderId());
+            assertEquals(VehicleType.STANDARD, offers.get(0).getVehicleType());
         }
         
         @Test
@@ -227,9 +228,9 @@ class DriverServiceTest {
             // When
             List<Order> offers = driverService.getOffers("driver-1");
             
-            // Then - order-2 距離較近 (12,22 vs 15,25)
+            // Then - 根據獨佔派單邏輯，回傳最近的 order-2
+            assertEquals(1, offers.size());
             assertEquals("order-2", offers.get(0).getOrderId());
-            assertEquals("order-1", offers.get(1).getOrderId());
         }
         
         @Test

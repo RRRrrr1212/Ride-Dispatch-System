@@ -1,0 +1,688 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.uber:ride-dispatch-server >--------------------
+[INFO] Building Ride Dispatch Server 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- jacoco:0.8.13:prepare-agent (prepare-agent) @ ride-dispatch-server ---
+[INFO] argLine set to -javaagent:C:\\Users\\wilso\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.13\\org.jacoco.agent-0.8.13-runtime.jar=destfile=C:\\Users\\wilso\\OneDrive\\桌面\\Uber\\server\\target\\jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ ride-dispatch-server ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ ride-dispatch-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ ride-dispatch-server ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ ride-dispatch-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ ride-dispatch-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.uber.controller.AdminControllerTest
+16:44:49.529 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.controller.AdminControllerTest]: AdminControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.436 s <<< FAILURE! -- in com.uber.controller.AdminControllerTest
+[ERROR] com.uber.controller.AdminControllerTest -- Time elapsed: 0.436 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 18 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 22 more
+
+[INFO] Running com.uber.controller.DriverControllerTest
+16:44:49.734 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.controller.DriverControllerTest]: DriverControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.038 s <<< FAILURE! -- in com.uber.controller.DriverControllerTest
+[ERROR] com.uber.controller.DriverControllerTest -- Time elapsed: 0.038 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 18 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 22 more
+
+[INFO] Running com.uber.controller.OrderControllerTest
+16:44:49.778 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.controller.OrderControllerTest]: OrderControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.028 s <<< FAILURE! -- in com.uber.controller.OrderControllerTest
+[ERROR] com.uber.controller.OrderControllerTest -- Time elapsed: 0.028 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 18 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 22 more
+
+[INFO] Running com.uber.integration.IntegrationFlowTest
+16:44:49.812 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.integration.IntegrationFlowTest]: IntegrationFlowTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.013 s <<< FAILURE! -- in com.uber.integration.IntegrationFlowTest
+[ERROR] com.uber.integration.IntegrationFlowTest -- Time elapsed: 0.013 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\integration\IntegrationFlowTest$ApiContractTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\integration\IntegrationFlowTest$ApiContractTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 17 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 21 more
+
+[INFO] Running com.uber.repository.DriverRepositoryTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.156 s -- in com.uber.repository.DriverRepositoryTest
+[INFO] Running com.uber.repository.OrderRepositoryTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.031 s -- in com.uber.repository.OrderRepositoryTest
+[INFO] Running com.uber.service.AuditServiceTest
+[INFO] Running com.uber.service.AuditServiceTest$LogFailureTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.046 s -- in com.uber.service.AuditServiceTest$LogFailureTests
+[INFO] Running com.uber.service.AuditServiceTest$LogSuccessTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.uber.service.AuditServiceTest$LogSuccessTests
+[INFO] Running com.uber.service.AuditServiceTest$QueryTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.uber.service.AuditServiceTest$QueryTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.062 s -- in com.uber.service.AuditServiceTest
+[INFO] Running com.uber.service.ConcurrencyH2Test
+16:44:50.089 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.service.ConcurrencyH2Test]: ConcurrencyH2Test does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.017 s <<< FAILURE! -- in com.uber.service.ConcurrencyH2Test
+[ERROR] com.uber.service.ConcurrencyH2Test -- Time elapsed: 0.017 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.postProcessTestInstance(SpringExtension.java:158)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1716)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 29 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 33 more
+
+[INFO] Running com.uber.service.DriverServiceTest
+[INFO] Running com.uber.service.DriverServiceTest$GetOffersTests
+16:44:50.105 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+16:44:50.110 [main] INFO com.uber.service.DriverService -- Driver registered: driver-1
+16:44:50.112 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+16:44:50.120 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+[ERROR] Tests run: 4, Failures: 1, Errors: 1, Skipped: 0, Time elapsed: 0.019 s <<< FAILURE! -- in com.uber.service.DriverServiceTest$GetOffersTests
+[ERROR] com.uber.service.DriverServiceTest$GetOffersTests.testGetOffers_FilterByVehicleType -- Time elapsed: 0.007 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <2> but was: <1>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)
+	at com.uber.service.DriverServiceTest$GetOffersTests.testGetOffers_FilterByVehicleType(DriverServiceTest.java:217)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+[ERROR] com.uber.service.DriverServiceTest$GetOffersTests.testGetOffers_SortedByDistance -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.IndexOutOfBoundsException: Index: 1 Size: 1
+	at java.base/java.util.ImmutableCollections$AbstractImmutableList.outOfBounds(ImmutableCollections.java:359)
+	at java.base/java.util.ImmutableCollections$List12.get(ImmutableCollections.java:612)
+	at com.uber.service.DriverServiceTest$GetOffersTests.testGetOffers_SortedByDistance(DriverServiceTest.java:232)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+[INFO] Running com.uber.service.DriverServiceTest$GoOfflineTests
+16:44:50.124 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+16:44:50.124 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now offline
+16:44:50.125 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.uber.service.DriverServiceTest$GoOfflineTests
+[INFO] Running com.uber.service.DriverServiceTest$GoOnlineTests
+16:44:50.128 [main] INFO com.uber.service.DriverService -- Driver registered: driver-1
+16:44:50.128 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (30.0, 40.0)
+16:44:50.130 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in com.uber.service.DriverServiceTest$GoOnlineTests
+[INFO] Running com.uber.service.DriverServiceTest$RegisterDriverTests
+16:44:50.132 [main] INFO com.uber.service.DriverService -- Driver registered: driver-1
+[INFO] Running com.uber.service.DriverServiceTest$RegisterDriverTests$RegisterDriverDuplicateTests
+16:44:50.135 [main] INFO com.uber.service.DriverService -- Driver registered: driver-dup
+16:44:50.136 [main] INFO com.uber.service.DriverService -- Driver registered: driver-dup
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in com.uber.service.DriverServiceTest$RegisterDriverTests$RegisterDriverDuplicateTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.uber.service.DriverServiceTest$RegisterDriverTests
+[INFO] Running com.uber.service.DriverServiceTest$UpdateLocationTests
+16:44:50.141 [main] INFO com.uber.service.DriverService -- Driver driver-1 is now online at (10.0, 20.0)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.uber.service.DriverServiceTest$UpdateLocationTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.043 s -- in com.uber.service.DriverServiceTest
+[INFO] Running com.uber.service.FareServiceTest
+[INFO] Running com.uber.service.FareServiceTest$ActualFareTests
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.uber.service.FareServiceTest$ActualFareTests
+[INFO] Running com.uber.service.FareServiceTest$CancelFeeTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in com.uber.service.FareServiceTest$CancelFeeTests
+[INFO] Running com.uber.service.FareServiceTest$EstimatedFareTests
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.uber.service.FareServiceTest$EstimatedFareTests
+[INFO] Running com.uber.service.FareServiceTest$RatePlanComplianceTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.uber.service.FareServiceTest$RatePlanComplianceTests
+[INFO] Running com.uber.service.FareServiceTest$RatePlanManagementTests
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.uber.service.FareServiceTest$RatePlanManagementTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in com.uber.service.FareServiceTest
+[INFO] Running com.uber.service.IdempotencyH4Test
+16:44:50.180 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.uber.service.IdempotencyH4Test]: IdempotencyH4Test does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.012 s <<< FAILURE! -- in com.uber.service.IdempotencyH4Test
+[ERROR] com.uber.service.IdempotencyH4Test -- Time elapsed: 0.012 s <<< ERROR!
+org.springframework.beans.factory.BeanDefinitionStoreException: Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:504)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(ClassPathScanningCandidateComponentProvider.java:351)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:90)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:351)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:267)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:215)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:108)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:363)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.postProcessTestInstance(SpringExtension.java:158)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1716)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: org.springframework.core.type.classreading.ClassFormatException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that is not supported yet. Consider compiling with a lower '-target' or upgrade your framework version. Affected class: file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:59)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.core.type.classreading.CachingMetadataReaderFactory.getMetadataReader(CachingMetadataReaderFactory.java:131)
+	at org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.scanCandidateComponents(ClassPathScanningCandidateComponentProvider.java:470)
+	... 29 more
+Caused by: java.lang.IllegalArgumentException: Unsupported class file major version 69
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:200)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:180)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:166)
+	at org.springframework.asm.ClassReader.<init>(ClassReader.java:288)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:56)
+	... 33 more
+
+[INFO] Running com.uber.service.MatchingServiceTest
+[INFO] Running com.uber.service.MatchingServiceTest$AdditionalEdgeTests
+mvn : Mockito is currently se
+lf-attaching to enable the in
+line-mock-maker. This will no
+ longer work in future releas
+es of the JDK. Please add Moc
+kito as an agent to your buil
+d as described in Mockito's d
+ocumentation: https://javadoc
+.io/doc/org.mockito/mockito-c
+ore/latest/org/mockito/Mockit
+o.html#0.3
+位於 線路:1 字元:1
++ mvn test 2>&1 | Out-File te
+st_result3.txt -Encoding utf8
++ ~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Mockito  
+   is curr...ockito.html#0   
+ .3:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+Java HotSpot(TM) 64-Bit Serve
+r VM warning: Sharing is only
+ supported for boot loader cl
+asses because bootstrap class
+path has been appended
+WARNING: A terminally depreca
+ted method in sun.misc.Unsafe
+ has been called
+WARNING: sun.misc.Unsafe::obj
+ectFieldOffset has been calle
+d by net.bytebuddy.dynamic.lo
+ading.ClassInjector$UsingUnsa
+fe$Dispatcher$CreationAction 
+(file:/C:/Users/wilso/.m2/rep
+ository/net/bytebuddy/byte-bu
+ddy/1.17.5/byte-buddy-1.17.5.
+jar)
+WARNING: Please consider repo
+rting this to the maintainers
+ of class net.bytebuddy.dynam
+ic.loading.ClassInjector$Usin
+gUnsafe$Dispatcher$CreationAc
+tion
+WARNING: sun.misc.Unsafe::obj
+ectFieldOffset will be remove
+d in a future release
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.150 s -- in com.uber.service.MatchingServiceTest$AdditionalEdgeTests
+[INFO] Running com.uber.service.MatchingServiceTest$BoundaryConditionsTests
+16:44:51.412 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+16:44:51.419 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-001 with vehicle type STANDARD
+16:44:51.427 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-001 with vehicle type STANDARD
+16:44:51.432 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-aaa (distance: 1.4142135623730951)
+16:44:51.436 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-001 with vehicle type STANDARD
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.086 s -- in com.uber.service.MatchingServiceTest$BoundaryConditionsTests
+[INFO] Running com.uber.service.MatchingServiceTest$ComplexScenarioTests
+16:44:51.445 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+16:44:51.466 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s -- in com.uber.service.MatchingServiceTest$ComplexScenarioTests
+[INFO] Running com.uber.service.MatchingServiceTest$DistanceCalculationTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.024 s -- in com.uber.service.MatchingServiceTest$DistanceCalculationTests
+[INFO] Running com.uber.service.MatchingServiceTest$FindBestDriverTests
+16:44:51.500 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-001 with vehicle type STANDARD
+16:44:51.506 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+16:44:51.510 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-premium (distance: 1.4142135623730951)
+16:44:51.514 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-001 with vehicle type STANDARD
+16:44:51.518 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+16:44:51.522 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-aaa (distance: 1.4142135623730951)
+16:44:51.526 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-001: driver-001 (distance: 2.8284271247461903)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.031 s -- in com.uber.service.MatchingServiceTest$FindBestDriverTests
+[INFO] Running com.uber.service.MatchingServiceTest$GetAvailableDriversTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.MatchingServiceTest$GetAvailableDriversTests
+[INFO] Running com.uber.service.MatchingServiceTest$GetAvailableOrdersTests
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.uber.service.MatchingServiceTest$GetAvailableOrdersTests
+[INFO] Running com.uber.service.MatchingServiceTest$SearchRadiusBoundaryTests
+16:44:51.562 [main] INFO com.uber.service.MatchingService -- Search radius updated to: 100.0
+16:44:51.564 [main] INFO com.uber.service.MatchingService -- Best driver found for order far-order: driver-001 (distance: 70.71067811865476)
+16:44:51.571 [main] INFO com.uber.service.MatchingService -- Best driver found for order order-boundary: driver-boundary (distance: 10.0)
+16:44:51.580 [main] INFO com.uber.service.MatchingService -- No matching driver found for order order-remote with vehicle type STANDARD
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in com.uber.service.MatchingServiceTest$SearchRadiusBoundaryTests
+[INFO] Running com.uber.service.MatchingServiceTest$SearchRadiusTests
+16:44:51.589 [main] INFO com.uber.service.MatchingService -- Search radius updated to: 20.0
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.uber.service.MatchingServiceTest$SearchRadiusTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.391 s -- in com.uber.service.MatchingServiceTest
+[INFO] Running com.uber.service.OrderServiceTest
+[INFO] Running com.uber.service.OrderServiceTest$AcceptOrderTests
+16:44:51.597 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.597 [main] INFO com.uber.service.OrderService -- Order created: 75bf7ff9-8874-47f9-a06e-2cb2fc584ced (assigned to: null)
+16:44:51.601 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.601 [main] INFO com.uber.service.OrderService -- Order created: 43122993-f781-4bcf-b28f-5dc7f272a068 (assigned to: null)
+16:44:51.601 [main] INFO com.uber.service.OrderService -- Order 43122993-f781-4bcf-b28f-5dc7f272a068 accepted by driver driver-1
+16:44:51.604 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.604 [main] INFO com.uber.service.OrderService -- Order created: 2162bfbf-41e8-43fb-9718-dd2b702a0887 (assigned to: null)
+16:44:51.604 [main] INFO com.uber.service.OrderService -- Order 2162bfbf-41e8-43fb-9718-dd2b702a0887 accepted by driver driver-1
+16:44:51.604 [main] INFO com.uber.service.OrderService -- Idempotent accept - order already accepted by same driver
+16:44:51.606 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.606 [main] INFO com.uber.service.OrderService -- Order created: a5e847f9-56bf-4833-b1ed-79afcf78164c (assigned to: null)
+16:44:51.609 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.609 [main] INFO com.uber.service.OrderService -- Order created: 96ca18fa-7b00-4e6f-af36-9c97039f1d17 (assigned to: null)
+16:44:51.609 [main] INFO com.uber.service.OrderService -- Order 96ca18fa-7b00-4e6f-af36-9c97039f1d17 accepted by driver driver-1
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.uber.service.OrderServiceTest$AcceptOrderTests
+[INFO] Running com.uber.service.OrderServiceTest$CancelOrderTests
+16:44:51.613 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.614 [main] INFO com.uber.service.OrderService -- Order created: 5b5684f5-b25b-42f1-8bf0-1c6f3e938ac1 (assigned to: null)
+16:44:51.614 [main] INFO com.uber.service.OrderService -- Order 5b5684f5-b25b-42f1-8bf0-1c6f3e938ac1 accepted by driver driver-1
+16:44:51.615 [main] INFO com.uber.service.OrderService -- Order 5b5684f5-b25b-42f1-8bf0-1c6f3e938ac1 cancelled
+16:44:51.617 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.618 [main] INFO com.uber.service.OrderService -- Order created: 73034955-ee49-4730-b56d-c48b7334acca (assigned to: null)
+16:44:51.618 [main] INFO com.uber.service.OrderService -- Order 73034955-ee49-4730-b56d-c48b7334acca cancelled
+16:44:51.620 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.620 [main] INFO com.uber.service.OrderService -- Order created: 13e1cd94-7546-40b9-ab3d-0b134381ee68 (assigned to: null)
+16:44:51.620 [main] INFO com.uber.service.OrderService -- Order 13e1cd94-7546-40b9-ab3d-0b134381ee68 cancelled
+16:44:51.622 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.622 [main] INFO com.uber.service.OrderService -- Order created: 478e4405-23c8-4f09-a5b0-1c6ecae54978 (assigned to: null)
+16:44:51.622 [main] INFO com.uber.service.OrderService -- Order 478e4405-23c8-4f09-a5b0-1c6ecae54978 accepted by driver driver-1
+16:44:51.622 [main] INFO com.uber.service.OrderService -- Trip started for order 478e4405-23c8-4f09-a5b0-1c6ecae54978
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.OrderServiceTest$CancelOrderTests
+[INFO] Running com.uber.service.OrderServiceTest$CompleteTripTests
+16:44:51.627 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.627 [main] INFO com.uber.service.OrderService -- Order created: 1225ceb0-0845-4007-9a11-72f1dab73917 (assigned to: null)
+16:44:51.627 [main] INFO com.uber.service.OrderService -- Order 1225ceb0-0845-4007-9a11-72f1dab73917 accepted by driver driver-1
+16:44:51.627 [main] INFO com.uber.service.OrderService -- Trip started for order 1225ceb0-0845-4007-9a11-72f1dab73917
+16:44:51.628 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 1225ceb0-0845-4007-9a11-72f1dab73917
+16:44:51.628 [main] INFO com.uber.service.OrderService -- Trip completed for order 1225ceb0-0845-4007-9a11-72f1dab73917, fare: 477.26
+16:44:51.630 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.631 [main] INFO com.uber.service.OrderService -- Order created: ff7b5cd0-858d-4a54-b2d0-0e0cf18894ac (assigned to: null)
+16:44:51.631 [main] INFO com.uber.service.OrderService -- Order ff7b5cd0-858d-4a54-b2d0-0e0cf18894ac accepted by driver driver-1
+16:44:51.631 [main] INFO com.uber.service.OrderService -- Trip started for order ff7b5cd0-858d-4a54-b2d0-0e0cf18894ac
+16:44:51.633 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.634 [main] INFO com.uber.service.OrderService -- Order created: 784a6ea0-8e43-4f2c-a89e-82a2c1e6c82d (assigned to: null)
+16:44:51.634 [main] INFO com.uber.service.OrderService -- Order 784a6ea0-8e43-4f2c-a89e-82a2c1e6c82d accepted by driver driver-1
+16:44:51.634 [main] INFO com.uber.service.OrderService -- Trip started for order 784a6ea0-8e43-4f2c-a89e-82a2c1e6c82d
+16:44:51.634 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 784a6ea0-8e43-4f2c-a89e-82a2c1e6c82d
+16:44:51.634 [main] INFO com.uber.service.OrderService -- Trip completed for order 784a6ea0-8e43-4f2c-a89e-82a2c1e6c82d, fare: 477.26
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.uber.service.OrderServiceTest$CompleteTripTests
+[INFO] Running com.uber.service.OrderServiceTest$CreateOrderTests
+16:44:51.637 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.638 [main] INFO com.uber.service.OrderService -- Order created: 087d0a95-f1ca-4a02-9f0e-f1aaae681032 (assigned to: null)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.uber.service.OrderServiceTest$CreateOrderTests
+[INFO] Running com.uber.service.OrderServiceTest$IllegalStateTransitionTests
+16:44:51.645 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.646 [main] INFO com.uber.service.OrderService -- Order created: b4f6e30f-bebf-4dff-97ac-d1d9ada4d8ca (assigned to: null)
+16:44:51.646 [main] INFO com.uber.service.OrderService -- Order b4f6e30f-bebf-4dff-97ac-d1d9ada4d8ca cancelled
+16:44:51.647 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.647 [main] INFO com.uber.service.OrderService -- Order created: af5eddef-4bed-4783-a341-fc4bce717e1a (assigned to: null)
+16:44:51.649 [main] INFO com.uber.service.OrderService -- Order af5eddef-4bed-4783-a341-fc4bce717e1a accepted by driver driver-1
+16:44:51.649 [main] INFO com.uber.service.OrderService -- Trip started for order af5eddef-4bed-4783-a341-fc4bce717e1a
+16:44:51.649 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order af5eddef-4bed-4783-a341-fc4bce717e1a
+16:44:51.649 [main] INFO com.uber.service.OrderService -- Trip completed for order af5eddef-4bed-4783-a341-fc4bce717e1a, fare: 477.26
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.uber.service.OrderServiceTest$IllegalStateTransitionTests
+[INFO] Running com.uber.service.OrderServiceTest$StartTripTests
+16:44:51.653 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.653 [main] INFO com.uber.service.OrderService -- Order created: 33ad0b42-b621-4d67-8f55-56dc451e5ad0 (assigned to: null)
+16:44:51.653 [main] INFO com.uber.service.OrderService -- Order 33ad0b42-b621-4d67-8f55-56dc451e5ad0 accepted by driver driver-1
+16:44:51.654 [main] INFO com.uber.service.OrderService -- Trip started for order 33ad0b42-b621-4d67-8f55-56dc451e5ad0
+16:44:51.656 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.656 [main] INFO com.uber.service.OrderService -- Order created: 8cea741d-7624-4d2f-bd6d-862ae0d79c06 (assigned to: null)
+16:44:51.656 [main] INFO com.uber.service.OrderService -- Order 8cea741d-7624-4d2f-bd6d-862ae0d79c06 accepted by driver driver-1
+16:44:51.656 [main] INFO com.uber.service.OrderService -- Trip started for order 8cea741d-7624-4d2f-bd6d-862ae0d79c06
+16:44:51.657 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.657 [main] INFO com.uber.service.OrderService -- Order created: 0b28dc4c-b813-43f0-8785-dad80849e4f3 (assigned to: null)
+16:44:51.657 [main] INFO com.uber.service.OrderService -- Order 0b28dc4c-b813-43f0-8785-dad80849e4f3 accepted by driver driver-1
+16:44:51.660 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.660 [main] INFO com.uber.service.OrderService -- Order created: 92c2c6cf-0d22-4c4b-b1f7-a50ca1b704af (assigned to: null)
+16:44:51.660 [main] INFO com.uber.service.OrderService -- Order 92c2c6cf-0d22-4c4b-b1f7-a50ca1b704af accepted by driver driver-1
+16:44:51.660 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.661 [main] INFO com.uber.service.OrderService -- Order created: 27d134f6-12ae-44dd-bb81-cf64af1481c3 (assigned to: null)
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.uber.service.OrderServiceTest$StartTripTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.072 s -- in com.uber.service.OrderServiceTest
+[INFO] Running com.uber.service.StateMachineTest
+[INFO] Running com.uber.service.StateMachineTest$CancelledImmutableTests
+16:44:51.667 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.667 [main] INFO com.uber.service.OrderService -- Order created: 0230512b-02ae-4764-8d06-ce35085f17cc (assigned to: null)
+16:44:51.667 [main] INFO com.uber.service.OrderService -- Order 0230512b-02ae-4764-8d06-ce35085f17cc cancelled
+16:44:51.670 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.670 [main] INFO com.uber.service.OrderService -- Order created: 9bdc77d3-6e6b-4490-b1ca-6f497ce8ea9d (assigned to: null)
+16:44:51.671 [main] INFO com.uber.service.OrderService -- Order 9bdc77d3-6e6b-4490-b1ca-6f497ce8ea9d cancelled
+16:44:51.672 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.672 [main] INFO com.uber.service.OrderService -- Order created: 9bbbc6cd-f5f7-47d9-bca5-b28540c05800 (assigned to: null)
+16:44:51.672 [main] INFO com.uber.service.OrderService -- Order 9bbbc6cd-f5f7-47d9-bca5-b28540c05800 accepted by driver driver-1
+16:44:51.672 [main] INFO com.uber.service.OrderService -- Order 9bbbc6cd-f5f7-47d9-bca5-b28540c05800 cancelled
+16:44:51.675 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.676 [main] INFO com.uber.service.OrderService -- Order created: 47f1170a-7645-4873-a492-c2d340aad0cc (assigned to: null)
+16:44:51.676 [main] INFO com.uber.service.OrderService -- Order 47f1170a-7645-4873-a492-c2d340aad0cc cancelled
+16:44:51.678 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.678 [main] INFO com.uber.service.OrderService -- Order created: 4917f2e2-ce7c-4824-ae38-b38cb2f61d44 (assigned to: null)
+16:44:51.678 [main] INFO com.uber.service.OrderService -- Order 4917f2e2-ce7c-4824-ae38-b38cb2f61d44 cancelled
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.uber.service.StateMachineTest$CancelledImmutableTests
+[INFO] Running com.uber.service.StateMachineTest$CompletedImmutableTests
+16:44:51.681 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.681 [main] INFO com.uber.service.OrderService -- Order created: 71aaddbe-9dfa-4d3b-a5a8-6a0938c5e09c (assigned to: null)
+16:44:51.681 [main] INFO com.uber.service.OrderService -- Order 71aaddbe-9dfa-4d3b-a5a8-6a0938c5e09c accepted by driver driver-1
+16:44:51.681 [main] INFO com.uber.service.OrderService -- Trip started for order 71aaddbe-9dfa-4d3b-a5a8-6a0938c5e09c
+16:44:51.681 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 71aaddbe-9dfa-4d3b-a5a8-6a0938c5e09c
+16:44:51.681 [main] INFO com.uber.service.OrderService -- Trip completed for order 71aaddbe-9dfa-4d3b-a5a8-6a0938c5e09c, fare: 477.26
+16:44:51.684 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.685 [main] INFO com.uber.service.OrderService -- Order created: 9909d440-361b-4f95-ab4d-c627cf709730 (assigned to: null)
+16:44:51.685 [main] INFO com.uber.service.OrderService -- Order 9909d440-361b-4f95-ab4d-c627cf709730 accepted by driver driver-1
+16:44:51.685 [main] INFO com.uber.service.OrderService -- Trip started for order 9909d440-361b-4f95-ab4d-c627cf709730
+16:44:51.685 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 9909d440-361b-4f95-ab4d-c627cf709730
+16:44:51.685 [main] INFO com.uber.service.OrderService -- Trip completed for order 9909d440-361b-4f95-ab4d-c627cf709730, fare: 477.26
+16:44:51.687 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.688 [main] INFO com.uber.service.OrderService -- Order created: 5bd2041a-60a4-4f65-b324-a7ae9902fc7a (assigned to: null)
+16:44:51.688 [main] INFO com.uber.service.OrderService -- Order 5bd2041a-60a4-4f65-b324-a7ae9902fc7a accepted by driver driver-1
+16:44:51.688 [main] INFO com.uber.service.OrderService -- Trip started for order 5bd2041a-60a4-4f65-b324-a7ae9902fc7a
+16:44:51.688 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 5bd2041a-60a4-4f65-b324-a7ae9902fc7a
+16:44:51.689 [main] INFO com.uber.service.OrderService -- Trip completed for order 5bd2041a-60a4-4f65-b324-a7ae9902fc7a, fare: 477.26
+16:44:51.691 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.692 [main] INFO com.uber.service.OrderService -- Order created: ba3b1390-7a90-4d1f-bfa6-ec99117fb6c0 (assigned to: null)
+16:44:51.692 [main] INFO com.uber.service.OrderService -- Order ba3b1390-7a90-4d1f-bfa6-ec99117fb6c0 accepted by driver driver-1
+16:44:51.692 [main] INFO com.uber.service.OrderService -- Trip started for order ba3b1390-7a90-4d1f-bfa6-ec99117fb6c0
+16:44:51.692 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order ba3b1390-7a90-4d1f-bfa6-ec99117fb6c0
+16:44:51.692 [main] INFO com.uber.service.OrderService -- Trip completed for order ba3b1390-7a90-4d1f-bfa6-ec99117fb6c0, fare: 477.26
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.uber.service.StateMachineTest$CompletedImmutableTests
+[INFO] Running com.uber.service.StateMachineTest$ComprehensiveStateMachineTests
+16:44:51.695 [main] INFO com.uber.service.OrderService -- Order auto-assigned to driver: driver-1
+16:44:51.697 [main] INFO com.uber.service.OrderService -- Order created: 0661e4dc-da44-48d5-ab6f-aaaa733cf2a2 (assigned to: driver-1)
+16:44:51.697 [main] INFO com.uber.service.OrderService -- Order 0661e4dc-da44-48d5-ab6f-aaaa733cf2a2 accepted by driver driver-1
+16:44:51.697 [main] INFO com.uber.service.OrderService -- Trip started for order 0661e4dc-da44-48d5-ab6f-aaaa733cf2a2
+16:44:51.697 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order 0661e4dc-da44-48d5-ab6f-aaaa733cf2a2
+16:44:51.697 [main] INFO com.uber.service.OrderService -- Trip completed for order 0661e4dc-da44-48d5-ab6f-aaaa733cf2a2, fare: 477.26
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Order auto-assigned to driver: driver-1
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Order created: ac6a425f-6f53-4352-b05f-d30c71722dae (assigned to: driver-1)
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Order ac6a425f-6f53-4352-b05f-d30c71722dae accepted by driver driver-1
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Trip started for order ac6a425f-6f53-4352-b05f-d30c71722dae
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Using actual duration: 0 minutes for order ac6a425f-6f53-4352-b05f-d30c71722dae
+16:44:51.699 [main] INFO com.uber.service.OrderService -- Trip completed for order ac6a425f-6f53-4352-b05f-d30c71722dae, fare: 477.26
+16:44:51.702 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.702 [main] INFO com.uber.service.OrderService -- Order created: 2777a8e6-8193-4afe-8ece-4705a47a3517 (assigned to: null)
+16:44:51.703 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.703 [main] INFO com.uber.service.OrderService -- Order created: e846c62f-0234-4ce0-97bf-6ce386b6b70c (assigned to: null)
+16:44:51.704 [main] INFO com.uber.service.OrderService -- Order auto-assigned to driver: driver-1
+16:44:51.704 [main] INFO com.uber.service.OrderService -- Order created: 6ccab640-70cc-40a7-8577-4f17045fe961 (assigned to: driver-1)
+16:44:51.704 [main] INFO com.uber.service.OrderService -- Order 6ccab640-70cc-40a7-8577-4f17045fe961 accepted by driver driver-1
+16:44:51.704 [main] INFO com.uber.service.OrderService -- Trip started for order 6ccab640-70cc-40a7-8577-4f17045fe961
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.uber.service.StateMachineTest$ComprehensiveStateMachineTests
+[INFO] Running com.uber.service.StateMachineTest$PendingToAcceptedTests
+16:44:51.708 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.709 [main] INFO com.uber.service.OrderService -- Order created: bea52537-8107-4fc8-92ff-6321c737f6d5 (assigned to: null)
+16:44:51.709 [main] INFO com.uber.service.OrderService -- Order bea52537-8107-4fc8-92ff-6321c737f6d5 accepted by driver driver-1
+16:44:51.710 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.711 [main] INFO com.uber.service.OrderService -- Order created: 455f4dfd-c256-4f76-a9fd-ec483849c41f (assigned to: null)
+16:44:51.712 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.713 [main] INFO com.uber.service.OrderService -- Order created: a7ed496f-8e11-4029-b248-8d952d87df6a (assigned to: null)
+16:44:51.716 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.716 [main] INFO com.uber.service.OrderService -- Order created: 1342a06c-eeea-4ac5-a4ca-53a0b03bfb00 (assigned to: null)
+16:44:51.716 [main] INFO com.uber.service.OrderService -- Order 1342a06c-eeea-4ac5-a4ca-53a0b03bfb00 accepted by driver driver-1
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.StateMachineTest$PendingToAcceptedTests
+[INFO] Running com.uber.service.StateMachineTest$PendingToOngoingTests
+16:44:51.728 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.728 [main] INFO com.uber.service.OrderService -- Order created: 12c8e12e-9908-4895-8495-a095e59a3fd9 (assigned to: null)
+16:44:51.730 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.730 [main] INFO com.uber.service.OrderService -- Order created: 46fa2abd-cf0e-44d7-9b7f-a2b8c2b17b50 (assigned to: null)
+16:44:51.730 [main] INFO com.uber.service.OrderService -- Order 46fa2abd-cf0e-44d7-9b7f-a2b8c2b17b50 accepted by driver driver-1
+16:44:51.730 [main] INFO com.uber.service.OrderService -- Trip started for order 46fa2abd-cf0e-44d7-9b7f-a2b8c2b17b50
+16:44:51.731 [main] WARN com.uber.service.OrderService -- No available driver found for order with vehicleType: STANDARD
+16:44:51.732 [main] INFO com.uber.service.OrderService -- Order created: fb1835d6-2c7d-4c11-b9bc-31d07d145f66 (assigned to: null)
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.uber.service.StateMachineTest$PendingToOngoingTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in com.uber.service.StateMachineTest
+[INFO] Running com.uber.service.ValidationServiceTest
+[INFO] Running com.uber.service.ValidationServiceTest$DetailedDriverCompleteTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.uber.service.ValidationServiceTest$DetailedDriverCompleteTests
+[INFO] Running com.uber.service.ValidationServiceTest$DetailedOrderCompleteTests
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.ValidationServiceTest$DetailedOrderCompleteTests
+[INFO] Running com.uber.service.ValidationServiceTest$IsDriverCompleteTests
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.uber.service.ValidationServiceTest$IsDriverCompleteTests
+[INFO] Running com.uber.service.ValidationServiceTest$IsOrderCompleteTests
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.uber.service.ValidationServiceTest$IsOrderCompleteTests
+[INFO] Running com.uber.service.ValidationServiceTest$PhoneValidationDetailTests
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.uber.service.ValidationServiceTest$PhoneValidationDetailTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateCancelOrderTests
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.ValidationServiceTest$ValidateCancelOrderTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateCreateOrderRequestTests
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in com.uber.service.ValidationServiceTest$ValidateCreateOrderRequestTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateDriverCanAcceptTests
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.uber.service.ValidationServiceTest$ValidateDriverCanAcceptTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateDriverOrderMatchTests
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.uber.service.ValidationServiceTest$ValidateDriverOrderMatchTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateDriverRegistrationTests
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.103 s -- in com.uber.service.ValidationServiceTest$ValidateDriverRegistrationTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateDriverStateTransitionTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.uber.service.ValidationServiceTest$ValidateDriverStateTransitionTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateLocationUpdateTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.uber.service.ValidationServiceTest$ValidateLocationUpdateTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateOrderAcceptableTests
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.uber.service.ValidationServiceTest$ValidateOrderAcceptableTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateOrderStateTransitionTests
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.uber.service.ValidationServiceTest$ValidateOrderStateTransitionTests
+[INFO] Running com.uber.service.ValidationServiceTest$ValidateRatePlanTests
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.uber.service.ValidationServiceTest$ValidateRatePlanTests
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.269 s -- in com.uber.service.ValidationServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   DriverServiceTest$GetOffersTests.testGetOffers_FilterByVehicleType:217 expected: <2> but was: <1>
+[ERROR] Errors: 
+[ERROR]   AdminControllerTest ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[ERROR]   DriverControllerTest ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[ERROR]   OrderControllerTest ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\controller\AdminControllerTest$BuildAuditLogResponseTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[ERROR]   IntegrationFlowTest ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\integration\IntegrationFlowTest$ApiContractTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[ERROR]   ConcurrencyH2Test ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[ERROR]   DriverServiceTest$GetOffersTests.testGetOffers_SortedByDistance:232 ? IndexOutOfBounds Index: 1 Size: 1
+[ERROR]   IdempotencyH4Test ? BeanDefinitionStore Incompatible class format in file [C:\Users\wilso\OneDrive\桌面\Uber\server\target\test-classes\com\uber\service\AuditServiceTest$LogFailureTests.class]: set system property 'spring.classformat.ignore' to 'true' if you mean to ignore such files during classpath scanning
+[INFO] 
+[ERROR] Tests run: 277, Failures: 1, Errors: 7, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.698 s
+[INFO] Finished at: 2026-01-01T16:44:52+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project ride-dispatch-server: There are test failures.
+[ERROR] 
+[ERROR] Please refer to C:\Users\wilso\OneDrive\桌面\Uber\server\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

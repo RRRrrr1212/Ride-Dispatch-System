@@ -49,6 +49,12 @@ class AdminControllerTest {
     @MockitoBean
     private FareService fareService;
 
+    @MockitoBean
+    private RiderService riderService;
+
+    @MockitoBean
+    private ValidationService validationService;
+
     private Order sampleOrder;
     private Driver sampleDriver;
     private AuditLog sampleAuditLog;

@@ -1,9 +1,12 @@
 package com.uber.repository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.uber.model.Order;
 import com.uber.model.OrderStatus;
+import com.uber.util.JsonFileUtil;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,15 +14,36 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 訂單儲存庫 (In-Memory)
+ * 訂單儲存庫 (In-Memory with file persistence)
  */
 @Repository
 public class OrderRepository {
     
     private final Map<String, Order> orders = new ConcurrentHashMap<>();
+    private static final String FILE_NAME = "orders.json";
+    
+    public OrderRepository() {
+        loadData();
+    }
+
+    private void loadData() {
+        if (JsonFileUtil.isTestEnv()) {
+            return;
+        }
+        List<Order> data = JsonFileUtil.loadFromFile(FILE_NAME, new TypeReference<List<Order>>() {});
+        data.forEach(order -> orders.put(order.getOrderId(), order));
+    }
+
+    private void saveData() {
+        if (JsonFileUtil.isTestEnv()) {
+            return;
+        }
+        JsonFileUtil.saveToFile(FILE_NAME, new ArrayList<>(orders.values()));
+    }
     
     public Order save(Order order) {
         orders.put(order.getOrderId(), order);
+        saveData();
         return order;
     }
     
@@ -51,6 +75,7 @@ public class OrderRepository {
     
     public void deleteAll() {
         orders.clear();
+        saveData();
     }
     
     public int count() {

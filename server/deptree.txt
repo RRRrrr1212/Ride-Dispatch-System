@@ -1,0 +1,109 @@
+﻿[INFO] Scanning for projects...
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-dependency-plugin/3.9.0/maven-dependency-plugin-3.9.0.pom
+Progress (1): 739 B
+Progress (1): 2.3 kB
+Progress (1): 3.4 kB
+Progress (1): 7.0 kB
+Progress (1): 11 kB 
+Progress (1): 14 kB
+Progress (1): 17 kB
+Progress (1): 19 kB
+                   
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-dependency-plugin/3.9.0/maven-dependency-plugin-3.9.0.pom (19 kB at 35 kB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-dependency-plugin/3.9.0/maven-dependency-plugin-3.9.0.jar
+Progress (1): 0.9/224 kB
+Progress (1): 2.3/224 kB
+Progress (1): 3.6/224 kB
+Progress (1): 5.0/224 kB
+Progress (1): 6.4/224 kB
+Progress (1): 7.7/224 kB
+Progress (1): 9.1/224 kB
+Progress (1): 10/224 kB 
+Progress (1): 12/224 kB
+Progress (1): 13/224 kB
+Progress (1): 15/224 kB
+Progress (1): 16/224 kB
+Progress (1): 17/224 kB
+Progress (1): 19/224 kB
+Progress (1): 20/224 kB
+Progress (1): 21/224 kB
+Progress (1): 23/224 kB
+Progress (1): 24/224 kB
+Progress (1): 26/224 kB
+Progress (1): 27/224 kB
+Progress (1): 28/224 kB
+Progress (1): 30/224 kB
+Progress (1): 31/224 kB
+Progress (1): 32/224 kB
+Progress (1): 34/224 kB
+Progress (1): 35/224 kB
+Progress (1): 36/224 kB
+Progress (1): 38/224 kB
+Progress (1): 39/224 kB
+Progress (1): 41/224 kB
+Progress (1): 42/224 kB
+Progress (1): 43/224 kB
+Progress (1): 45/224 kB
+Progress (1): 46/224 kB
+Progress (1): 47/224 kB
+Progress (1): 52/224 kB
+Progress (1): 56/224 kB
+Progress (1): 60/224 kB
+Progress (1): 64/224 kB
+Progress (1): 69/224 kB
+Progress (1): 73/224 kB
+Progress (1): 77/224 kB
+Progress (1): 81/224 kB
+Progress (1): 86/224 kB
+Progress (1): 90/224 kB
+Progress (1): 94/224 kB
+Progress (1): 98/224 kB
+Progress (1): 102/224 kB
+Progress (1): 107/224 kB
+Progress (1): 111/224 kB
+Progress (1): 115/224 kB
+Progress (1): 119/224 kB
+Progress (1): 124/224 kB
+Progress (1): 128/224 kB
+Progress (1): 131/224 kB
+Progress (1): 135/224 kB
+Progress (1): 139/224 kB
+Progress (1): 143/224 kB
+Progress (1): 147/224 kB
+Progress (1): 152/224 kB
+Progress (1): 156/224 kB
+Progress (1): 160/224 kB
+Progress (1): 164/224 kB
+Progress (1): 169/224 kB
+Progress (1): 173/224 kB
+Progress (1): 177/224 kB
+Progress (1): 181/224 kB
+Progress (1): 185/224 kB
+Progress (1): 190/224 kB
+Progress (1): 194/224 kB
+Progress (1): 198/224 kB
+Progress (1): 200/224 kB
+Progress (1): 204/224 kB
+Progress (1): 208/224 kB
+Progress (1): 213/224 kB
+Progress (1): 224 kB    
+                    
+Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-dependency-plugin/3.9.0/maven-dependency-plugin-3.9.0.jar (224 kB at 726 kB/s)
+[INFO] 
+[INFO] -------------------< com.uber:ride-dispatch-server >--------------------
+[INFO] Building Ride Dispatch Server 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.406 s
+[INFO] Finished at: 2026-01-01T16:48:09+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Unknown lifecycle phase ".springframework.boot". You must specify a valid lifecycle phase or a goal in the format <plugin-prefix>:<goal> or <plugin-group-id>:<plugin-artifact-id>[:<plugin-version>]:<goal>. Available lifecycle phases are: pre-clean, clean, post-clean, validate, initialize, generate-sources, process-sources, generate-resources, process-resources, compile, process-classes, generate-test-sources, process-test-sources, generate-test-resources, process-test-resources, test-compile, process-test-classes, test, prepare-package, package, pre-integration-test, integration-test, post-integration-test, verify, install, deploy, pre-site, site, post-site, site-deploy. -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/LifecyclePhaseNotFoundException

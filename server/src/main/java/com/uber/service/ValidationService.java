@@ -336,8 +336,8 @@ public class ValidationService {
      * 驗證座標有效性
      */
     private boolean isValidCoordinate(double x, double y) {
-        // 假設座標範圍為 -180 到 180（經緯度範圍）
-        return x >= -180 && x <= 180 && y >= -90 && y <= 90;
+        // x 視為緯度 (-90~90)，y 視為經度 (-180~180)
+        return x >= -90 && x <= 90 && y >= -180 && y <= 180;
     }
     
     /**

@@ -317,12 +317,12 @@ class OrderControllerTest {
                     .completedAt(Instant.now())
                     .build();
 
-            when(orderService.completeTrip("order-123", "driver-456"))
+            when(orderService.completeTrip(eq("order-123"), eq("driver-456"), any()))
                     .thenReturn(completedOrder);
             when(fareService.getRatePlan(VehicleType.STANDARD))
                     .thenReturn(sampleRatePlan);
 
-            AcceptOrderRequest request = new AcceptOrderRequest();
+            CompleteOrderRequest request = new CompleteOrderRequest();
             request.setDriverId("driver-456");
 
             mockMvc.perform(put("/api/orders/order-123/complete")
@@ -592,12 +592,12 @@ class OrderControllerTest {
                     .completedAt(Instant.now())
                     .build();
 
-            when(orderService.completeTrip("order-long", "driver-456"))
+            when(orderService.completeTrip(eq("order-long"), eq("driver-456"), any()))
                     .thenReturn(completedOrder);
             when(fareService.getRatePlan(VehicleType.STANDARD))
                     .thenReturn(sampleRatePlan);
 
-            AcceptOrderRequest request = new AcceptOrderRequest();
+            CompleteOrderRequest request = new CompleteOrderRequest();
             request.setDriverId("driver-456");
 
             mockMvc.perform(put("/api/orders/order-long/complete")
@@ -621,12 +621,12 @@ class OrderControllerTest {
                     .completedAt(Instant.now())
                     .build();
 
-            when(orderService.completeTrip("order-short", "driver-456"))
+            when(orderService.completeTrip(eq("order-short"), eq("driver-456"), any()))
                     .thenReturn(completedOrder);
             when(fareService.getRatePlan(VehicleType.STANDARD))
                     .thenReturn(sampleRatePlan);
 
-            AcceptOrderRequest request = new AcceptOrderRequest();
+            CompleteOrderRequest request = new CompleteOrderRequest();
             request.setDriverId("driver-456");
 
             mockMvc.perform(put("/api/orders/order-short/complete")
@@ -650,12 +650,12 @@ class OrderControllerTest {
                     .completedAt(Instant.now())
                     .build();
 
-            when(orderService.completeTrip("order-123", "driver-456"))
+            when(orderService.completeTrip(eq("order-123"), eq("driver-456"), any()))
                     .thenReturn(completedOrder);
             when(fareService.getRatePlan(VehicleType.STANDARD))
                     .thenReturn(sampleRatePlan);
 
-            AcceptOrderRequest request = new AcceptOrderRequest();
+            CompleteOrderRequest request = new CompleteOrderRequest();
             request.setDriverId("driver-456");
 
             mockMvc.perform(put("/api/orders/order-123/complete")

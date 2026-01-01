@@ -1,6 +1,7 @@
 package com.uber.service;
 
 import com.uber.exception.BusinessException;
+import com.uber.model.Location;
 import com.uber.model.Rider;
 import com.uber.repository.RiderRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class RiderService {
      */
     public Rider createRider(String riderId, String name, String phone) {
         if (riderRepository.existsById(riderId)) {
-            throw new BusinessException("RIDER_EXISTS", "乘客帳號已存在", 409);
+            throw new BusinessException("RIDER_EXISTS", "Rider already exists", 409);
         }
         
         Rider rider = Rider.builder()
@@ -52,7 +53,7 @@ public class RiderService {
      */
     public Rider getRider(String riderId) {
         return riderRepository.findById(riderId)
-                .orElseThrow(() -> new BusinessException("RIDER_NOT_FOUND", "乘客不存在", 404));
+                .orElseThrow(() -> new BusinessException("RIDER_NOT_FOUND", "Rider not found", 404));
     }
     
     /**
@@ -60,10 +61,21 @@ public class RiderService {
      */
     public void deleteRider(String riderId) {
         if (!riderRepository.existsById(riderId)) {
-            throw new BusinessException("RIDER_NOT_FOUND", "乘客不存在", 404);
+            throw new BusinessException("RIDER_NOT_FOUND", "Rider not found", 404);
         }
         riderRepository.deleteById(riderId);
         log.info("Rider deleted: {}", riderId);
+    }
+
+    /**
+     * 更新乘客位置（Admin 專用）
+     */
+    public Rider updateLocation(String riderId, Location location) {
+        Rider rider = getRider(riderId);
+        rider.setLocation(location);
+        riderRepository.save(rider);
+        log.info("Rider location updated: {}", riderId);
+        return rider;
     }
     
     /**

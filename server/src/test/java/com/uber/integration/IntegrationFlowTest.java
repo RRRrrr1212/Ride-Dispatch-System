@@ -66,8 +66,10 @@ class IntegrationFlowTest {
 
     @BeforeEach
     void setUp() {
-        // 注意：Repository 使用 ConcurrentHashMap，測試之間會共享資料
-        // 為確保測試獨立性，每個測試使用不同的 ID
+        // 清除所有資料以確保測試獨立性
+        orderRepository.deleteAll();
+        driverRepository.deleteAll();
+        auditLogRepository.deleteAll();
 
         // 初始化費率計畫
         fareService.initRatePlans();

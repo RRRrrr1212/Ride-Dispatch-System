@@ -167,7 +167,6 @@ public class OrderController {
     }
     
     /**
-<<<<<<< HEAD
      * 司機拒絕訂單 (重新配對給下一個司機)
      * PUT /api/orders/{orderId}/decline
      */
@@ -210,8 +209,6 @@ public class OrderController {
     }
     
     /**
-=======
->>>>>>> origin/test-case
      * 建構訂單回應資料
      */
     private Map<String, Object> buildOrderResponse(Order order) {

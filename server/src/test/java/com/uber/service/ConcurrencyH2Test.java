@@ -191,6 +191,14 @@ class ConcurrencyH2Test {
         List<String> orderIds = new ArrayList<>();
         
         for (int i = 0; i < orderCount; i++) {
+            // 先建立專屬司機，確保訂單能配對到這些最近的司機
+            for (int j = 0; j < driversPerOrder; j++) {
+                String driverId = "driver-" + i + "-" + j;
+                driverService.registerDriver(driverId, "Driver " + i + "-" + j, 
+                        "0900-" + i + j, "XYZ-" + i + j, VehicleType.STANDARD);
+                driverService.goOnline(driverId, new Location(i * 10, i * 10));
+            }
+
             Order order = orderService.createOrder(
                     "passenger-" + i,
                     new Location(i * 10, i * 10),
@@ -198,14 +206,6 @@ class ConcurrencyH2Test {
                     VehicleType.STANDARD
             );
             orderIds.add(order.getOrderId());
-            
-            // 為每筆訂單建立專屬司機
-            for (int j = 0; j < driversPerOrder; j++) {
-                String driverId = "driver-" + i + "-" + j;
-                driverService.registerDriver(driverId, "Driver " + i + "-" + j, 
-                        "0900-" + i + j, "XYZ-" + i + j, VehicleType.STANDARD);
-                driverService.goOnline(driverId, new Location(i * 10, i * 10));
-            }
         }
         
         // When: 每筆訂單的司機們同時搶單

@@ -1,21 +1,28 @@
 package com.uber.model;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 2D 座標位置
+ * 2D 搴ф?浣嶇疆
  */
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class Location {
     private double x;
     private double y;
-    
+    private String address;
+
+    public Location(double x, double y) {
+        this(x, y, null);
+    }
+
     /**
-     * 計算與另一點的歐幾里得距離
+     * 瑷堢??囧彟涓€榛炵?姝愬咕?屽?璺濋洟
      */
     public double distanceTo(Location other) {
         double dx = this.x - other.x;

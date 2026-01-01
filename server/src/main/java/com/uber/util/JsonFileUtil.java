@@ -24,7 +24,22 @@ public class JsonFileUtil {
         }
     }
 
+    /**
+     * Detect whether the current execution is a test run.
+     * We skip file IO when running under surefire/junit to keep tests isolated/in-memory.
+     */
+    public static boolean isTestEnv() {
+        if (System.getProperty("skip.data.persistence") != null) {
+            return true;
+        }
+        String cmd = System.getProperty("sun.java.command", "").toLowerCase();
+        return cmd.contains("surefire") || cmd.contains("junit");
+    }
+
     public static <T> void saveToFile(String filename, List<T> data) {
+        if (isTestEnv()) {
+            return;
+        }
         try {
             File file = new File(DATA_DIR, filename);
             objectMapper.writeValue(file, data);
@@ -34,6 +49,9 @@ public class JsonFileUtil {
     }
 
     public static <T> List<T> loadFromFile(String filename, TypeReference<List<T>> typeReference) {
+        if (isTestEnv()) {
+            return Collections.emptyList();
+        }
         File file = new File(DATA_DIR, filename);
         if (!file.exists()) {
             return Collections.emptyList();

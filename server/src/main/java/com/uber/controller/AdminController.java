@@ -6,11 +6,14 @@ import com.uber.service.AuditService;
 import com.uber.service.DriverService;
 import com.uber.service.FareService;
 import com.uber.service.OrderService;
+import com.uber.service.RiderService;
+import com.uber.service.ValidationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,8 @@ public class AdminController {
     private final DriverService driverService;
     private final AuditService auditService;
     private final FareService fareService;
+    private final RiderService riderService;
+    private final ValidationService validationService;
     
     /**
      * 取得所有訂單 (支援分頁和狀態篩選)
@@ -261,6 +266,126 @@ public class AdminController {
         
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    /**
+     * 取得所有乘客
+     * GET /api/admin/riders
+     */
+    @GetMapping("/riders")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllRiders() {
+        List<Rider> riders = riderService.getAllRiders();
+        Map<String, Object> response = new HashMap<>();
+        response.put("riders", riders);
+        response.put("count", riders.size());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 新增乘客
+     * POST /api/admin/riders
+     */
+    @PostMapping("/riders")
+    public ResponseEntity<ApiResponse<Rider>> createRider(@RequestBody CreateRiderRequest request) {
+        Rider rider = riderService.createRider(request.riderId(), request.name(), request.phone());
+        return ResponseEntity.ok(ApiResponse.success(rider));
+    }
+
+    /**
+     * 取得乘客詳情
+     * GET /api/admin/riders/{riderId}
+     */
+    @GetMapping("/riders/{riderId}")
+    public ResponseEntity<ApiResponse<Rider>> getRiderDetail(@PathVariable String riderId) {
+        Rider rider = riderService.getRider(riderId);
+        return ResponseEntity.ok(ApiResponse.success(rider));
+    }
+
+    /**
+     * 刪除乘客
+     * DELETE /api/admin/riders/{riderId}
+     */
+    @DeleteMapping("/riders/{riderId}")
+    public ResponseEntity<ApiResponse<String>> deleteRider(@PathVariable String riderId) {
+        riderService.deleteRider(riderId);
+        return ResponseEntity.ok(ApiResponse.success("Rider deleted"));
+    }
+
+    /**
+     * 設定乘客位置 (Demo)
+     * PUT /api/admin/riders/{riderId}/location
+     */
+    @PutMapping("/riders/{riderId}/location")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> setRiderLocation(
+            @PathVariable String riderId,
+            @RequestBody UpdateLocationRequest request) {
+
+        Location location = new Location(request.lat(), request.lng(), request.address());
+        validationService.validateLocationUpdate(location);
+        Rider rider = riderService.updateLocation(riderId, location);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("riderId", riderId);
+        response.put("location", rider.getLocation());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 乘客位置設定狀態 (Demo)
+     * GET /api/admin/riders/{riderId}/location-status
+     */
+    @GetMapping("/riders/{riderId}/location-status")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getRiderLocationStatus(@PathVariable String riderId) {
+        Rider rider = riderService.getRider(riderId);
+        List<Order> activeOrders = orderService.getAllOrders().stream()
+                .filter(o -> riderId.equals(o.getPassengerId()))
+                .filter(o -> o.getStatus() == OrderStatus.PENDING
+                        || o.getStatus() == OrderStatus.ACCEPTED
+                        || o.getStatus() == OrderStatus.ONGOING)
+                .toList();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("riderId", riderId);
+        response.put("canSetLocation", activeOrders.isEmpty());
+        response.put("currentLocation", rider.getLocation());
+        response.put("totalOrdersFound", activeOrders.size());
+        response.put("activeOrdersCount", activeOrders.size());
+        response.put("activeOrders", activeOrders.stream()
+                .map(this::buildActiveOrderSummary)
+                .toList());
+        if (!activeOrders.isEmpty()) {
+            response.put("reason", "Rider has active orders");
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 強制取消乘客相關訂單 (修復用)
+     * POST /api/admin/riders/{riderId}/force-cancel-orders
+     */
+    @PostMapping("/riders/{riderId}/force-cancel-orders")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> forceCancelRiderOrders(@PathVariable String riderId) {
+        List<Order> activeOrders = orderService.getAllOrders().stream()
+                .filter(o -> riderId.equals(o.getPassengerId()))
+                .filter(o -> o.getStatus() == OrderStatus.PENDING
+                        || o.getStatus() == OrderStatus.ACCEPTED
+                        || o.getStatus() == OrderStatus.ONGOING)
+                .toList();
+
+        List<String> cancelledIds = new ArrayList<>();
+        activeOrders.forEach(order -> {
+            orderService.adminCancelOrder(order.getOrderId(), "ADMIN_FORCE");
+            cancelledIds.add(order.getOrderId());
+        });
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("riderId", riderId);
+        response.put("cancelledCount", cancelledIds.size());
+        response.put("cancelledOrderIds", cancelledIds);
+        response.put("timestamp", Instant.now());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
     
     // ========== 私有方法 ==========
     
@@ -368,4 +493,20 @@ public class AdminController {
         response.put("cancelFee", ratePlan.getCancelFee());
         return response;
     }
+
+    private Map<String, Object> buildActiveOrderSummary(Order order) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("orderId", order.getOrderId());
+        summary.put("status", order.getStatus().name());
+        summary.put("createdAt", order.getCreatedAt());
+        if (order.getDriverId() != null) {
+            summary.put("driverId", order.getDriverId());
+        }
+        return summary;
+    }
+
+    // ====== Request DTOs ======
+    private record CreateRiderRequest(String riderId, String name, String phone) {}
+
+    private record UpdateLocationRequest(double lat, double lng, String address) {}
 }

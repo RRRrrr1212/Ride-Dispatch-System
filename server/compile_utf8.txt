@@ -1,0 +1,22 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.uber:ride-dispatch-server >--------------------
+[INFO] Building Ride Dispatch Server 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.0:clean (default-clean) @ ride-dispatch-server ---
+[INFO] Deleting C:\Users\wilso\OneDrive\桌面\Uber\server\target
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.034 s
+[INFO] Finished at: 2026-01-01T16:36:37+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-clean-plugin:3.4.0:clean (default-clean) on project ride-dispatch-server: Failed to clean project: Failed to delete C:\Users\wilso\OneDrive\桌面\Uber\server\target\maven-status\maven-compiler-plugin\testCompile\default-testCompile -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
