@@ -6,282 +6,203 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 
 /**
- * Uber 風格主題 - 現代化設計系統
- * 參考 Uber Design System (Base)
+ * 主題常數和樣式定義
  */
 public class Theme {
     
-    // ============================================
-    // 🎨 品牌色彩 (Brand Colors)
-    // ============================================
+    // 主要顏色
+    public static final String PRIMARY = "#1976D2";           // 藍色
+    public static final String PRIMARY_DARK = "#1565C0";
+    public static final String PRIMARY_LIGHT = "#42A5F5";
     
-    // Uber 主要色彩
-    public static final String UBER_GREEN = "#06C167";        // 主要 CTA
-    public static final String UBER_GREEN_DARK = "#048848";   // 按下狀態
-    public static final String UBER_GREEN_LIGHT = "#1AD87C";  // 懸停狀態
+    public static final String SECONDARY = "#FF9800";         // 橘色
+    public static final String SECONDARY_DARK = "#F57C00";
     
-    public static final String UBER_BLUE = "#276EF1";         // 連結/資訊
-    public static final String UBER_BLUE_DARK = "#1E54B7";
-    public static final String UBER_BLUE_LIGHT = "#5B91F5";
+    public static final String SUCCESS = "#4CAF50";           // 綠色
+    public static final String WARNING = "#FFC107";           // 黃色
+    public static final String ERROR = "#F44336";             // 紅色
+    public static final String INFO = "#2196F3";              // 淺藍色
     
-    // ============================================
-    // 🌑 背景色彩 (Background Colors)
-    // ============================================
+    // 背景顏色
+    public static final String BG_DARK = "#121212";
+    public static final String BG_CARD = "#1E1E1E";
+    public static final String BG_HOVER = "#2A2A2A";
+    public static final String BG_LIGHT = "#FAFAFA";
     
-    public static final String BG_BLACK = "#000000";          // 純黑背景
-    public static final String BG_DARK = "#0D0D0D";           // 深黑背景
-    public static final String BG_CARD = "#141414";           // 卡片背景
-    public static final String BG_ELEVATED = "#1A1A1A";       // 提升卡片
-    public static final String BG_INPUT = "#242424";          // 輸入框背景
-    public static final String BG_HOVER = "#2A2A2A";          // 懸停背景
-    public static final String BG_SELECTED = "#1A3D26";       // 選中狀態 (綠色調)
+    // 文字顏色
+    public static final String TEXT_PRIMARY = "#FFFFFF";
+    public static final String TEXT_SECONDARY = "#B0B0B0";
+    public static final String TEXT_DARK = "#212121";
     
-    // ============================================
-    // 📝 文字色彩 (Text Colors)
-    // ============================================
-    
-    public static final String TEXT_PRIMARY = "#FFFFFF";      // 主要文字
-    public static final String TEXT_SECONDARY = "#A0A0A0";    // 次要文字
-    public static final String TEXT_TERTIARY = "#666666";     // 提示文字
-    public static final String TEXT_DISABLED = "#4A4A4A";     // 禁用文字
-    
-    // ============================================
-    // 📊 狀態色彩 (Status Colors)
-    // ============================================
-    
-    public static final String SUCCESS = "#06C167";           // 成功/完成
-    public static final String WARNING = "#F6B100";           // 警告/等待
-    public static final String ERROR = "#E11900";             // 錯誤/取消
-    public static final String INFO = "#276EF1";              // 資訊/進行中
-    
-    // ============================================
-    // 🔲 邊框色彩 (Border Colors)
-    // ============================================
-    
-    public static final String BORDER_DEFAULT = "#363636";
-    public static final String BORDER_LIGHT = "#444444";
-    public static final String BORDER_FOCUS = "#06C167";
-    
-    // ============================================
-    // 📐 尺寸常數 (Dimensions)
-    // ============================================
+    // 邊框
+    public static final String BORDER = "#333333";
+    public static final String BORDER_LIGHT = "#E0E0E0";
     
     // 字體大小
-    public static final int FONT_XS = 12;
-    public static final int FONT_SM = 14;
-    public static final int FONT_MD = 16;
-    public static final int FONT_LG = 18;
-    public static final int FONT_XL = 24;
-    public static final int FONT_XXL = 32;
+    public static final int FONT_SMALL = 12;
+    public static final int FONT_NORMAL = 14;
+    public static final int FONT_LARGE = 18;
+    public static final int FONT_XLARGE = 24;
+    public static final int FONT_TITLE = 32;
     
     // 間距
-    public static final int SPACING_XS = 4;
-    public static final int SPACING_SM = 8;
-    public static final int SPACING_MD = 16;
-    public static final int SPACING_LG = 24;
-    public static final int SPACING_XL = 32;
-    public static final int SPACING_XXL = 48;
+    public static final int SPACING_SMALL = 8;
+    public static final int SPACING_NORMAL = 16;
+    public static final int SPACING_LARGE = 24;
     
     // 圓角
-    public static final int RADIUS_SM = 8;
-    public static final int RADIUS_MD = 12;
-    public static final int RADIUS_LG = 16;
-    public static final int RADIUS_XL = 24;
-    
-    // 高度
-    public static final int HEIGHT_INPUT = 52;
-    public static final int HEIGHT_BUTTON = 56;
-    public static final int HEIGHT_NAVBAR = 56;
-    
-    // ============================================
-    // 舊版兼容 (Legacy Compatibility)
-    // ============================================
-    
-    @Deprecated public static final String PRIMARY = UBER_GREEN;
-    @Deprecated public static final String PRIMARY_DARK = UBER_GREEN_DARK;
-    @Deprecated public static final String PRIMARY_LIGHT = UBER_GREEN_LIGHT;
-    @Deprecated public static final String SECONDARY = "#FF9800";
-    @Deprecated public static final String SECONDARY_DARK = "#F57C00";
-    
-    // ============================================
-    // 🎨 漸層效果 (Gradients)
-    // ============================================
+    public static final int RADIUS_SMALL = 4;
+    public static final int RADIUS_NORMAL = 8;
+    public static final int RADIUS_LARGE = 16;
     
     /**
-     * 取得 Uber 風格漸層背景
+     * 取得漸層背景
      */
-    public static LinearGradient getUberGradient() {
-        return new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web(BG_DARK)),
-                new Stop(1, Color.web(BG_BLACK)));
+    public static LinearGradient getGradientBackground() {
+        return new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.web("#1a1a2e")),
+                new Stop(1, Color.web("#16213e")));
     }
     
     /**
-     * 取得綠色按鈕漸層
+     * 取得按鈕漸層
      */
-    public static LinearGradient getGreenButtonGradient() {
+    public static LinearGradient getButtonGradient() {
         return new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web(UBER_GREEN_LIGHT)),
-                new Stop(1, Color.web(UBER_GREEN)));
+                new Stop(0, Color.web(PRIMARY)),
+                new Stop(1, Color.web(PRIMARY_DARK)));
     }
     
-    // ============================================
-    // 🎨 預設樣式 (Base Styles)
-    // ============================================
-    
     /**
-     * 取得 Uber 風格基礎樣式表
+     * 基礎樣式表
      */
     public static String getBaseStyles() {
         return """
-            /* ============================================
-               Uber 風格基礎樣式
-               ============================================ */
-            
             .root {
-                -fx-font-family: 'Microsoft JhengHei', 'SF Pro Display', 'Segoe UI', sans-serif;
-                -fx-background-color: #0D0D0D;
+                -fx-font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+                -fx-background-color: #121212;
             }
             
-            /* 標籤 */
             .label {
                 -fx-text-fill: #FFFFFF;
             }
             
-            /* 輸入框 */
             .text-field, .password-field {
-                -fx-background-color: #242424;
+                -fx-background-color: #2A2A2A;
                 -fx-text-fill: #FFFFFF;
-                -fx-prompt-text-fill: #666666;
-                -fx-border-color: #363636;
-                -fx-border-radius: 12;
-                -fx-background-radius: 12;
-                -fx-padding: 14 16;
-                -fx-font-size: 16px;
+                -fx-border-color: #444444;
+                -fx-border-radius: 8;
+                -fx-background-radius: 8;
+                -fx-padding: 12;
+                -fx-font-size: 14px;
             }
             
             .text-field:focused, .password-field:focused {
-                -fx-border-color: #06C167;
-                -fx-effect: dropshadow(gaussian, rgba(6, 193, 103, 0.3), 10, 0, 0, 0);
+                -fx-border-color: #1976D2;
+                -fx-effect: dropshadow(gaussian, rgba(25, 118, 210, 0.3), 8, 0, 0, 0);
             }
             
-            /* 主要按鈕 */
             .button {
-                -fx-background-color: #06C167;
+                -fx-background-color: linear-gradient(to bottom, #1976D2, #1565C0);
                 -fx-text-fill: #FFFFFF;
-                -fx-font-size: 16px;
+                -fx-font-size: 14px;
                 -fx-font-weight: bold;
-                -fx-padding: 16 32;
-                -fx-background-radius: 12;
+                -fx-padding: 12 24;
+                -fx-background-radius: 8;
                 -fx-cursor: hand;
             }
             
             .button:hover {
-                -fx-background-color: #1AD87C;
-                -fx-effect: dropshadow(gaussian, rgba(6, 193, 103, 0.4), 12, 0, 0, 2);
+                -fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2);
+                -fx-effect: dropshadow(gaussian, rgba(33, 150, 243, 0.4), 12, 0, 0, 2);
             }
             
             .button:pressed {
-                -fx-background-color: #048848;
+                -fx-background-color: #1565C0;
             }
             
-            .button:disabled {
-                -fx-background-color: #2A2A2A;
-                -fx-text-fill: #666666;
-            }
-            
-            /* 次要按鈕 */
             .button-secondary {
-                -fx-background-color: transparent;
-                -fx-border-color: #06C167;
+                -fx-background-color: #2A2A2A;
+                -fx-border-color: #1976D2;
                 -fx-border-width: 2;
-                -fx-border-radius: 12;
-                -fx-text-fill: #06C167;
             }
             
             .button-secondary:hover {
-                -fx-background-color: rgba(6, 193, 103, 0.1);
+                -fx-background-color: #333333;
             }
             
-            /* 危險按鈕 */
+            .button-success {
+                -fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C);
+            }
+            
+            .button-success:hover {
+                -fx-background-color: linear-gradient(to bottom, #66BB6A, #4CAF50);
+            }
+            
             .button-danger {
-                -fx-background-color: #E11900;
-                -fx-text-fill: white;
+                -fx-background-color: linear-gradient(to bottom, #F44336, #D32F2F);
             }
             
             .button-danger:hover {
-                -fx-background-color: #FF3D1F;
+                -fx-background-color: linear-gradient(to bottom, #EF5350, #F44336);
             }
             
-            /* 警告按鈕 */
             .button-warning {
-                -fx-background-color: #F6B100;
-                -fx-text-fill: #000000;
+                -fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00);
             }
             
-            /* 卡片 */
             .card {
-                -fx-background-color: #141414;
-                -fx-background-radius: 16;
+                -fx-background-color: #1E1E1E;
+                -fx-background-radius: 12;
                 -fx-padding: 20;
-                -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 10, 0, 0, 4);
+                -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 4);
             }
             
             .card:hover {
-                -fx-background-color: #1A1A1A;
+                -fx-background-color: #252525;
             }
             
-            /* 標題 */
             .title {
-                -fx-font-size: 32px;
+                -fx-font-size: 28px;
                 -fx-font-weight: bold;
                 -fx-text-fill: #FFFFFF;
             }
             
             .subtitle {
                 -fx-font-size: 16px;
-                -fx-text-fill: #A0A0A0;
+                -fx-text-fill: #B0B0B0;
             }
             
-            /* 表格 */
             .table-view {
-                -fx-background-color: #141414;
-                -fx-border-color: transparent;
-            }
-            
-            .table-view .column-header-background {
-                -fx-background-color: #1A1A1A;
+                -fx-background-color: #1E1E1E;
+                -fx-border-color: #333333;
             }
             
             .table-view .column-header {
-                -fx-background-color: transparent;
+                -fx-background-color: #252525;
             }
             
             .table-view .column-header .label {
-                -fx-text-fill: #A0A0A0;
+                -fx-text-fill: #FFFFFF;
                 -fx-font-weight: bold;
-                -fx-font-size: 13px;
             }
             
             .table-row-cell {
-                -fx-background-color: #141414;
-                -fx-border-color: transparent transparent #242424 transparent;
+                -fx-background-color: #1E1E1E;
             }
             
             .table-row-cell:hover {
-                -fx-background-color: #1A1A1A;
+                -fx-background-color: #2A2A2A;
             }
             
             .table-row-cell:selected {
-                -fx-background-color: #1A3D26;
+                -fx-background-color: #1976D2;
             }
             
             .table-cell {
                 -fx-text-fill: #FFFFFF;
-                -fx-padding: 12 8;
             }
             
-            /* 滾動面板 */
             .scroll-pane {
                 -fx-background-color: transparent;
             }
@@ -290,242 +211,45 @@ public class Theme {
                 -fx-background-color: transparent;
             }
             
-            .scroll-bar {
-                -fx-background-color: transparent;
-            }
-            
-            .scroll-bar .thumb {
-                -fx-background-color: #363636;
-                -fx-background-radius: 10;
-            }
-            
-            .scroll-bar .thumb:hover {
-                -fx-background-color: #444444;
-            }
-            
-            .scroll-bar .increment-button,
-            .scroll-bar .decrement-button {
-                -fx-background-color: transparent;
-            }
-            
-            .scroll-bar .increment-arrow,
-            .scroll-bar .decrement-arrow {
-                -fx-background-color: transparent;
-            }
-            
-            /* 下拉選單 */
             .combo-box {
-                -fx-background-color: #242424;
-                -fx-border-color: #363636;
-                -fx-border-radius: 12;
-                -fx-background-radius: 12;
+                -fx-background-color: #2A2A2A;
+                -fx-border-color: #444444;
+                -fx-border-radius: 8;
+                -fx-background-radius: 8;
             }
             
             .combo-box .list-cell {
                 -fx-text-fill: #FFFFFF;
-                -fx-background-color: transparent;
-                -fx-padding: 8 12;
-            }
-            
-            .combo-box-popup .list-view {
-                -fx-background-color: #242424;
-                -fx-background-radius: 12;
-                -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
-            }
-            
-            .combo-box-popup .list-cell:hover {
                 -fx-background-color: #2A2A2A;
             }
             
-            .combo-box-popup .list-cell:selected {
-                -fx-background-color: #1A3D26;
+            .combo-box-popup .list-view {
+                -fx-background-color: #2A2A2A;
             }
             
-            /* 進度指示器 */
-            .progress-indicator {
-                -fx-progress-color: #06C167;
+            .combo-box-popup .list-cell:hover {
+                -fx-background-color: #3A3A3A;
             }
             
-            /* 狀態樣式 */
             .status-pending {
-                -fx-text-fill: #F6B100;
+                -fx-text-fill: #FFA500;
             }
             
             .status-accepted {
-                -fx-text-fill: #276EF1;
+                -fx-text-fill: #2196F3;
             }
             
             .status-ongoing {
-                -fx-text-fill: #06C167;
+                -fx-text-fill: #4CAF50;
             }
             
             .status-completed {
-                -fx-text-fill: #A0A0A0;
+                -fx-text-fill: #9E9E9E;
             }
             
             .status-cancelled {
-                -fx-text-fill: #E11900;
+                -fx-text-fill: #F44336;
             }
-            
-            /* 切換按鈕 */
-            .toggle-button {
-                -fx-background-color: #242424;
-                -fx-text-fill: #FFFFFF;
-                -fx-background-radius: 999;
-                -fx-padding: 12 24;
-                -fx-border-color: #363636;
-                -fx-border-radius: 999;
-            }
-            
-            .toggle-button:selected {
-                -fx-background-color: #06C167;
-                -fx-border-color: #06C167;
-            }
-            """;
-    }
-    
-    // ============================================
-    // 🛠️ 元件樣式工廠 (Component Style Factory)
-    // ============================================
-    
-    /**
-     * 取得主要按鈕樣式
-     */
-    public static String getPrimaryButtonStyle() {
-        return """
-            -fx-background-color: #06C167;
-            -fx-text-fill: white;
-            -fx-font-size: 16px;
-            -fx-font-weight: bold;
-            -fx-padding: 16 32;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """;
-    }
-    
-    /**
-     * 取得次要按鈕樣式
-     */
-    public static String getSecondaryButtonStyle() {
-        return """
-            -fx-background-color: transparent;
-            -fx-border-color: #06C167;
-            -fx-border-width: 2;
-            -fx-border-radius: 12;
-            -fx-text-fill: #06C167;
-            -fx-font-size: 14px;
-            -fx-padding: 14 28;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """;
-    }
-    
-    /**
-     * 取得危險按鈕樣式
-     */
-    public static String getDangerButtonStyle() {
-        return """
-            -fx-background-color: #E11900;
-            -fx-text-fill: white;
-            -fx-font-size: 14px;
-            -fx-font-weight: bold;
-            -fx-padding: 14 28;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """;
-    }
-    
-    /**
-     * 取得危險次要按鈕樣式（紅色邊框）
-     */
-    public static String getDangerOutlineButtonStyle() {
-        return """
-            -fx-background-color: transparent;
-            -fx-border-color: #E11900;
-            -fx-border-width: 2;
-            -fx-border-radius: 12;
-            -fx-text-fill: #E11900;
-            -fx-font-size: 14px;
-            -fx-padding: 14 28;
-            -fx-background-radius: 12;
-            -fx-cursor: hand;
-            """;
-    }
-    
-    /**
-     * 取得輸入框樣式
-     */
-    public static String getInputStyle() {
-        return """
-            -fx-background-color: #242424;
-            -fx-text-fill: white;
-            -fx-prompt-text-fill: #666666;
-            -fx-border-color: #363636;
-            -fx-border-radius: 12;
-            -fx-background-radius: 12;
-            -fx-padding: 14 16;
-            -fx-font-size: 16px;
-            """;
-    }
-    
-    /**
-     * 取得卡片樣式
-     */
-    public static String getCardStyle() {
-        return """
-            -fx-background-color: #141414;
-            -fx-background-radius: 16;
-            -fx-padding: 20;
-            """;
-    }
-    
-    /**
-     * 取得底部面板樣式 (Bottom Sheet)
-     */
-    public static String getBottomSheetStyle() {
-        return """
-            -fx-background-color: #141414;
-            -fx-background-radius: 24 24 0 0;
-            -fx-padding: 20;
-            """;
-    }
-    
-    /**
-     * 取得導航列樣式
-     */
-    public static String getNavbarStyle() {
-        return """
-            -fx-background-color: #000000;
-            -fx-padding: 0 16;
-            """;
-    }
-    
-    /**
-     * 取得選中卡片樣式
-     */
-    public static String getSelectedCardStyle() {
-        return """
-            -fx-background-color: #1A3D26;
-            -fx-background-radius: 12;
-            -fx-border-color: #06C167;
-            -fx-border-radius: 12;
-            -fx-border-width: 2;
-            -fx-padding: 16;
-            """;
-    }
-    
-    /**
-     * 取得未選中卡片樣式
-     */
-    public static String getUnselectedCardStyle() {
-        return """
-            -fx-background-color: #242424;
-            -fx-background-radius: 12;
-            -fx-border-color: #363636;
-            -fx-border-radius: 12;
-            -fx-border-width: 2;
-            -fx-padding: 16;
-            -fx-cursor: hand;
             """;
     }
 }

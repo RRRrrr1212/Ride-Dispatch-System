@@ -114,8 +114,6 @@ public class DriverController {
                     offer.put("pickupLocation", order.getPickupLocation());
                     offer.put("dropoffLocation", order.getDropoffLocation());
                     offer.put("vehicleType", order.getVehicleType().name());
-                    offer.put("passengerId", order.getPassengerId());
-                    offer.put("riderName", order.getRiderName());
                     offer.put("distance", order.getDistance());
                     offer.put("estimatedFare", order.getEstimatedFare());
                     offer.put("createdAt", order.getCreatedAt());
@@ -153,7 +151,7 @@ public class DriverController {
         if (status != null && !status.isEmpty()) {
             drivers = drivers.stream()
                     .filter(d -> d.getStatus().name().equalsIgnoreCase(status))
-                    .collect(Collectors.toList());
+                    .toList();
         }
         
         List<Map<String, Object>> driverList = drivers.stream()

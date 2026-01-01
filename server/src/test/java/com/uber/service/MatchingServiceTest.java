@@ -328,6 +328,13 @@ class MatchingServiceTest {
             assertEquals(1, orders.size());
             assertEquals("order-standard", orders.get(0).getOrderId());
         }
+
+        @Test
+        @DisplayName("getAvailableOrders: 傳入 null driver 時回傳空列表")
+        void testGetAvailableOrders_NullDriver() {
+            List<Order> result = matchingService.getAvailableOrders(null);
+            assertTrue(result.isEmpty());
+        }
     }
 
     @Nested
@@ -437,6 +444,311 @@ class MatchingServiceTest {
         void testDistance_NullInputs() {
             assertEquals(Double.MAX_VALUE, matchingService.calculateDistance(null, onlineDriver1));
             assertEquals(Double.MAX_VALUE, matchingService.calculateDistance(pendingOrder, null));
+        }
+
+        @Test
+        @DisplayName("訂單位置為 null 返回 MAX_VALUE")
+        void testDistance_NullOrderLocation() {
+            Order orderWithoutLocation = Order.builder().build();
+            assertEquals(Double.MAX_VALUE, matchingService.calculateDistance(orderWithoutLocation, onlineDriver1));
+        }
+
+        @Test
+        @DisplayName("司機位置為 null 返回 MAX_VALUE")
+        void testDistance_NullDriverLocation() {
+            Driver driverWithoutLocation = Driver.builder()
+                    .driverId("no-location")
+                    .build();
+            assertEquals(Double.MAX_VALUE, matchingService.calculateDistance(pendingOrder, driverWithoutLocation));
+        }
+
+        @Test
+        @DisplayName("大距離計算正確")
+        void testDistance_LargeDistance() {
+            Order farOrder = Order.builder()
+                    .pickupLocation(new Location(50, 50))
+                    .build();
+            Driver farDriver = Driver.builder()
+                    .location(new Location(0, 0))
+                    .build();
+            double distance = matchingService.calculateDistance(farOrder, farDriver);
+            assertEquals(Math.sqrt(5000), distance, 0.01);
+        }
+
+        @Test
+        @DisplayName("calculateDistance: 當 order 與 driver 都為 null 時回傳 MAX_VALUE")
+        void testDistance_BothNull() {
+            double d = matchingService.calculateDistance(null, null);
+            assertEquals(Double.MAX_VALUE, d);
+        }
+    }
+
+    @Nested
+    @DisplayName("邊界和異常情況")
+    class BoundaryConditionsTests {
+
+        @Test
+        @DisplayName("空司機列表時返回 empty")
+        void testFindBestDriver_EmptyDriverList() {
+            when(driverRepository.findAll()).thenReturn(List.of());
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("所有司機都離線時返回 empty")
+        void testFindBestDriver_AllOffline() {
+            offlineDriver.setVehicleType(VehicleType.STANDARD);
+            when(driverRepository.findAll()).thenReturn(List.of(offlineDriver));
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("所有司機都忙碌時返回 empty")
+        void testFindBestDriver_AllBusy() {
+            when(driverRepository.findAll()).thenReturn(List.of(busyDriver));
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("多個候選者時距離相同的情況下 ID 小者獲勝")
+        void testFindBestDriver_MultipleEqualDistances() {
+            Driver driver1 = Driver.builder()
+                    .driverId("driver-zzz")
+                    .name("Driver ZZZ")
+                    .status(DriverStatus.ONLINE)
+                    .vehicleType(VehicleType.STANDARD)
+                    .location(new Location(1, 1))
+                    .busy(false)
+                    .build();
+
+            Driver driver2 = Driver.builder()
+                    .driverId("driver-aaa")
+                    .name("Driver AAA")
+                    .status(DriverStatus.ONLINE)
+                    .vehicleType(VehicleType.STANDARD)
+                    .location(new Location(1, 1))
+                    .busy(false)
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(driver1, driver2));
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+
+            assertTrue(result.isPresent());
+            assertEquals("driver-aaa", result.get().getDriverId());
+        }
+
+        @Test
+        @DisplayName("訂單位置 null 時返回 empty")
+        void testFindBestDriver_NullOrderLocation() {
+            Order orderWithoutLocation = Order.builder()
+                    .orderId("no-location")
+                    .vehicleType(VehicleType.STANDARD)
+                    .build();
+            Optional<Driver> result = matchingService.findBestDriver(orderWithoutLocation);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("訂單 null 時返回 empty")
+        void testFindBestDriver_NullOrder() {
+            Optional<Driver> result = matchingService.findBestDriver(null);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("司機位置 null 時被過濾")
+        void testFindBestDriver_DriverWithoutLocation() {
+            Driver noLocationDriver = Driver.builder()
+                    .driverId("driver-noloc")
+                    .status(DriverStatus.ONLINE)
+                    .vehicleType(VehicleType.STANDARD)
+                    .busy(false)
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(noLocationDriver, onlineDriver1));
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+
+            assertTrue(result.isPresent());
+            assertEquals("driver-001", result.get().getDriverId());
+        }
+    }
+
+    @Nested
+    @DisplayName("搜尋半徑邊界測試")
+    class SearchRadiusBoundaryTests {
+
+        @Test
+        @DisplayName("剛好在搜尋半徑內的司機被選中")
+        void testMatch_AtSearchRadiusBoundary() {
+            // 默認半徑為 10 km，測試剛好 10 km 距離
+            Driver boundaryDriver = Driver.builder()
+                    .driverId("driver-boundary")
+                    .status(DriverStatus.ONLINE)
+                    .vehicleType(VehicleType.STANDARD)
+                    .location(new Location(2, 2)) // 到 (2,2) 距離為 0，到 (12,2) 距離為 10
+                    .busy(false)
+                    .build();
+
+            Order order = Order.builder()
+                    .orderId("order-boundary")
+                    .status(OrderStatus.PENDING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(12, 2))
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(boundaryDriver));
+            Optional<Driver> result = matchingService.findBestDriver(order);
+
+            assertTrue(result.isPresent());
+        }
+
+        @Test
+        @DisplayName("超出搜尋半徑的司機被排除")
+        void testMatch_BeyondSearchRadius() {
+            Order remoteOrder = Order.builder()
+                    .orderId("order-remote")
+                    .status(OrderStatus.PENDING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(50, 50))
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(onlineDriver1));
+            Optional<Driver> result = matchingService.findBestDriver(remoteOrder);
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("設定搜尋半徑為 0 時拋出異常")
+        void testSetSearchRadius_Zero() {
+            assertThrows(IllegalArgumentException.class, () -> {
+                matchingService.setSearchRadius(0);
+            });
+        }
+
+        @Test
+        @DisplayName("設定負搜尋半徑時拋出異常")
+        void testSetSearchRadius_Negative() {
+            assertThrows(IllegalArgumentException.class, () -> {
+                matchingService.setSearchRadius(-10);
+            });
+        }
+
+        @Test
+        @DisplayName("設定大搜尋半徑時正確應用")
+        void testSetSearchRadius_Large() {
+            matchingService.setSearchRadius(100.0);
+            assertEquals(100.0, matchingService.getSearchRadius());
+
+            Order farOrder = Order.builder()
+                    .orderId("far-order")
+                    .status(OrderStatus.PENDING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(50, 50))
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(onlineDriver1));
+            Optional<Driver> result = matchingService.findBestDriver(farOrder);
+
+            assertTrue(result.isPresent());
+        }
+    }
+
+    @Nested
+    @DisplayName("多司機複雜場景測試")
+    class ComplexScenarioTests {
+
+        @Test
+        @DisplayName("混合 online/offline/busy 司機時正確篩選")
+        void testFindBestDriver_MixedDrivers() {
+            when(driverRepository.findAll()).thenReturn(List.of(
+                    offlineDriver,
+                    busyDriver,
+                    onlineDriver1,
+                    onlineDriver2
+            ));
+
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+
+            assertTrue(result.isPresent());
+            assertEquals("driver-001", result.get().getDriverId());
+        }
+
+        @Test
+        @DisplayName("不同車種司機篩選")
+        void testFindBestDriver_DifferentVehicleTypes() {
+            Driver premiumDriver = Driver.builder()
+                    .driverId("driver-premium")
+                    .status(DriverStatus.ONLINE)
+                    .vehicleType(VehicleType.PREMIUM)
+                    .location(new Location(0.5, 0.5))
+                    .busy(false)
+                    .build();
+
+            when(driverRepository.findAll()).thenReturn(List.of(premiumDriver, onlineDriver1));
+
+            Optional<Driver> result = matchingService.findBestDriver(pendingOrder);
+
+            assertTrue(result.isPresent());
+            assertEquals("driver-001", result.get().getDriverId());
+        }
+
+        @Test
+        @DisplayName("空訂單列表時正確處理")
+        void testGetAvailableOrders_EmptyOrderList() {
+            when(orderRepository.findByStatus(OrderStatus.PENDING))
+                    .thenReturn(List.of());
+
+            List<Order> orders = matchingService.getAvailableOrders(onlineDriver1);
+            assertTrue(orders.isEmpty());
+        }
+
+        @Test
+        @DisplayName("多訂單場景下距離排序正確")
+        void testGetAvailableOrders_DistanceSorting() {
+            Order order1 = Order.builder()
+                    .orderId("order-close")
+                    .status(OrderStatus.PENDING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(0.1, 0.1))
+                    .build();
+
+            Order order2 = Order.builder()
+                    .orderId("order-far")
+                    .status(OrderStatus.PENDING)
+                    .vehicleType(VehicleType.STANDARD)
+                    .pickupLocation(new Location(5, 5))
+                    .build();
+
+            when(orderRepository.findByStatus(OrderStatus.PENDING))
+                    .thenReturn(List.of(order2, order1));
+
+            List<Order> orders = matchingService.getAvailableOrders(onlineDriver1);
+
+            assertEquals(2, orders.size());
+            assertEquals("order-close", orders.get(0).getOrderId());
+        }
+    }
+
+    @Nested
+    @DisplayName("額外邊界測試 - 補足未覆蓋分支")
+    class AdditionalEdgeTests {
+
+        @Test
+        @DisplayName("calculateDistance: 當 order 與 driver 都為 null 時回傳 MAX_VALUE")
+        void testDistance_BothNull() {
+            double d = matchingService.calculateDistance(null, null);
+            assertEquals(Double.MAX_VALUE, d);
+        }
+
+        @Test
+        @DisplayName("getAvailableOrders: 傳入 null driver 時回傳空列表")
+        void testGetAvailableOrders_NullDriver() {
+            List<Order> result = matchingService.getAvailableOrders(null);
+            assertTrue(result.isEmpty());
         }
     }
 }

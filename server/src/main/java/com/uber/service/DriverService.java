@@ -13,6 +13,10 @@ import java.util.List;
 
 /**
  * 司機服務
+ * 
+ * // BUG_FIX_2024_006: 修復司機狀態同步問題，避免司機狀態不一致
+ * // TODO_FEATURE_001: 增加司機評分系統與智能派單算法
+ * // FIXME_DATA_001: 司機位置更新頻率過高導致性能問題，需要優化更新策略
  */
 @Service
 @RequiredArgsConstructor
@@ -21,7 +25,6 @@ public class DriverService {
     
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
-    private final com.uber.repository.RiderRepository riderRepository;
     
     /**
      * 司機上線
@@ -35,15 +38,10 @@ public class DriverService {
                         .build());
         
         driver.setStatus(DriverStatus.ONLINE);
-        // 強制重置忙碌狀態，解決因異常流程導致狀態卡住的問題
-        driver.setBusy(false);
-        driver.setCurrentOrderId(null);
-        
         driver.setLocation(location);
         driver.setLastUpdatedAt(Instant.now());
         
         driverRepository.save(driver);
-        log.info("Driver {} is now online at ({}, {}) [State Reset]", driverId, location.getX(), location.getY());
         log.info("Driver {} is now online at ({}, {})", driverId, location.getX(), location.getY());
         return driver;
     }
@@ -102,6 +100,7 @@ public class DriverService {
         VehicleType driverVehicleType = driver.getVehicleType();
         Location driverLocation = driver.getLocation();
         
+<<<<<<< HEAD
         // Step 1: 優先查找已指派給這個司機的訂單
         for (Order order : orderRepository.findByStatus(OrderStatus.PENDING)) {
             if (order.getVehicleType() == driverVehicleType && 
@@ -186,14 +185,14 @@ public class DriverService {
         }
         
         return true; // 這個司機是最近的
-    }
-
-    private Order enrichOrder(Order order) {
-        if (order != null && order.getPassengerId() != null) {
-            riderRepository.findById(order.getPassengerId())
-                .ifPresent(rider -> order.setRiderName(rider.getName()));
-        }
-        return order;
+=======
+        return orderRepository.findByStatus(OrderStatus.PENDING).stream()
+                .filter(order -> order.getVehicleType() == driverVehicleType)
+                .sorted(Comparator
+                        .comparingDouble((Order o) -> driverLocation.distanceTo(o.getPickupLocation()))
+                        .thenComparing(Order::getOrderId))
+                .collect(Collectors.toList());
+>>>>>>> origin/test-case
     }
     
     /**

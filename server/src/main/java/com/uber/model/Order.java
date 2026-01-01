@@ -16,28 +16,11 @@ import java.time.Instant;
 @AllArgsConstructor
 public class Order {
     
-    @com.fasterxml.jackson.annotation.JsonProperty("orderId")
     private String orderId;
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("passengerId")
     private String passengerId;
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("riderName")
-    private String riderName; // 乘客姓名 (Transient)
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("driverId")
     private String driverId;
     
-    @com.fasterxml.jackson.annotation.JsonProperty("driverName")
-    private String driverName; // 司機姓名 (Transient)
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("vehiclePlate")
-    private String vehiclePlate; // 車牌 (Transient)
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("status")
     private OrderStatus status;
-    
-    @com.fasterxml.jackson.annotation.JsonProperty("vehicleType")
     private VehicleType vehicleType;
     
     private Location pickupLocation;
@@ -59,10 +42,4 @@ public class Order {
     
     private String cancelledBy;
     private Double cancelFee;
-    
-    // 司機實際收入（扣除平台抽成後）
-    private Double driverEarnings;
-    
-    // 共享路徑資料 (JSON 格式，例如 [[lat,lng],[lat,lng],...])
-    private String routePathJson;
 }
